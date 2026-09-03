@@ -1,0 +1,42 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "WB2 device"
+      },
+      "scan": {
+        "title": "Scan for WB2 devices",
+        "description": "Select a device found on the local network."
+      },
+      "scan_progress": {
+        "title": "Scanning for WB2 devices",
+        "description": "Probing port {port} on the local network..."
+      },
+      "no_devices_found": {
+        "title": "未发现设备",
+        "description": "局域网内未发现 WB2 设备，你可以手动输入设备 IP 地址。"
+      },
+      "pick": {
+        "title": "Select a WB2 device",
+        "description": "Select the device you want to add."
+      },
+      "manual": {
+        "title": "Manually enter device",
+        "description": "Enter the IP address and TCP port of your WB2 device."
+      }
+    },
+    "progress": {
+      "scanning_lan": "Scanning the local network for WB2 devices..."
+    },
+    "error": {
+      "cannot_connect": "Cannot connect to the device. Check the address and that the WB2 firmware is running.",
+      "invalid_ip": "Please enter a valid IPv4 address."
+    },
+    "abort": {
+      "already_configured": "This device is already configured.",
+      "no_network": "No usable network interface found.",
+      "scan_failed": "The network scan failed, please try again.",
+      "no_devices_found": "No WB2 devices found on the local network."
+    }
+  }
+}
