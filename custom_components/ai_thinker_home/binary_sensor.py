@@ -22,6 +22,7 @@ from .const import (
     DEFAULT_TYPE,
     DEVICE_TYPE_RADAR,
     DOMAIN,
+    model_to_prefix,
     short_mac,
 )
 from .coordinator import Wb2Coordinator
@@ -45,11 +46,12 @@ async def async_setup_entry(
 
     device_name = coordinator.data.name if coordinator.data and coordinator.data.name else base_name
     model = coordinator.data.model if coordinator.data and coordinator.data.model else DEFAULT_MODEL
+    sw_version = coordinator.data.sw_version if coordinator.data else None
 
     async_add_entities(
         [
-            Wb2RadarPresence(coordinator, device_name, model, host, port, mac, dtype),
-            Wb2RadarMotion(coordinator, device_name, model, host, port, mac, dtype),
+            Wb2RadarPresence(coordinator, device_name, model, sw_version, host, port, mac, dtype),
+            Wb2RadarMotion(coordinator, device_name, model, sw_version, host, port, mac, dtype),
         ]
     )
 
@@ -65,6 +67,7 @@ class Wb2RadarPresence(CoordinatorEntity[Wb2Coordinator], BinarySensorEntity):
         coordinator: Wb2Coordinator,
         device_name: str,
         model: str,
+        sw_version: str | None,
         host: str,
         port: int,
         mac: str | None,
@@ -72,8 +75,9 @@ class Wb2RadarPresence(CoordinatorEntity[Wb2Coordinator], BinarySensorEntity):
     ) -> None:
         super().__init__(coordinator)
         short = short_mac(mac)
+        prefix = model_to_prefix(model, dtype)
         if short:
-            self.entity_id = f"binary_sensor.{dtype}_{short.lower()}_presence_001"
+            self.entity_id = f"binary_sensor.{prefix}_{short.lower()}_presence_001"
             self._attr_unique_id = f"{DOMAIN}_{mac}_presence"
             identifiers = {(DOMAIN, mac)}
         else:
@@ -86,7 +90,7 @@ class Wb2RadarPresence(CoordinatorEntity[Wb2Coordinator], BinarySensorEntity):
             "name": device_name,
             "manufacturer": "Ai-Thinker",
             "model": model,
-            "sw_version": "0.7.0",
+            "sw_version": sw_version,
         }
 
     @property
@@ -95,9 +99,9 @@ class Wb2RadarPresence(CoordinatorEntity[Wb2Coordinator], BinarySensorEntity):
         state = self.coordinator.data
         if state is None:
             return None
-        if state.on is None:
+        if state.presence is None:
             return None
-        return bool(state.on)
+        return bool(state.presence)
 
     @property
     def available(self) -> bool:
@@ -115,6 +119,7 @@ class Wb2RadarMotion(CoordinatorEntity[Wb2Coordinator], BinarySensorEntity):
         coordinator: Wb2Coordinator,
         device_name: str,
         model: str,
+        sw_version: str | None,
         host: str,
         port: int,
         mac: str | None,
@@ -122,8 +127,9 @@ class Wb2RadarMotion(CoordinatorEntity[Wb2Coordinator], BinarySensorEntity):
     ) -> None:
         super().__init__(coordinator)
         short = short_mac(mac)
+        prefix = model_to_prefix(model, dtype)
         if short:
-            self.entity_id = f"binary_sensor.{dtype}_{short.lower()}_motion_001"
+            self.entity_id = f"binary_sensor.{prefix}_{short.lower()}_motion_001"
             self._attr_unique_id = f"{DOMAIN}_{mac}_motion"
             identifiers = {(DOMAIN, mac)}
         else:
@@ -136,7 +142,7 @@ class Wb2RadarMotion(CoordinatorEntity[Wb2Coordinator], BinarySensorEntity):
             "name": device_name,
             "manufacturer": "Ai-Thinker",
             "model": model,
-            "sw_version": "0.7.0",
+            "sw_version": sw_version,
         }
 
     @property

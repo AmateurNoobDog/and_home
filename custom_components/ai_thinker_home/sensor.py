@@ -24,6 +24,7 @@ from .const import (
     DEVICE_TYPE_RADAR,
     DOMAIN,
     RADAR_GATE_DATA_ENABLE,
+    model_to_prefix,
     short_mac,
 )
 from .coordinator import Wb2Coordinator
@@ -68,12 +69,13 @@ async def async_setup_entry(
 
     device_name = coordinator.data.name if coordinator.data and coordinator.data.name else base_name
     model = coordinator.data.model if coordinator.data and coordinator.data.model else DEFAULT_MODEL
+    sw_version = coordinator.data.sw_version if coordinator.data else None
 
     entities = []
     for field_name, gate_index, distance_range in GATE_CONFIG:
         entities.append(
             Wb2RadarGateSensor(
-                coordinator, device_name, model, host, port, mac, dtype,
+                coordinator, device_name, model, sw_version, host, port, mac, dtype,
                 field_name, gate_index, distance_range,
             )
         )
@@ -81,7 +83,7 @@ async def async_setup_entry(
     for field_name, label in DEBUG_CONFIG:
         entities.append(
             Wb2RadarDebugSensor(
-                coordinator, device_name, model, host, port, mac, dtype,
+                coordinator, device_name, model, sw_version, host, port, mac, dtype,
                 field_name, label,
             )
         )
@@ -102,6 +104,7 @@ class Wb2RadarGateSensor(CoordinatorEntity[Wb2Coordinator], SensorEntity):
         coordinator: Wb2Coordinator,
         device_name: str,
         model: str,
+        sw_version: str | None,
         host: str,
         port: int,
         mac: str | None,
@@ -116,8 +119,9 @@ class Wb2RadarGateSensor(CoordinatorEntity[Wb2Coordinator], SensorEntity):
         self._distance_range = distance_range
 
         short = short_mac(mac)
+        prefix = model_to_prefix(model, dtype)
         if short:
-            self.entity_id = f"sensor.{dtype}_{short.lower()}_gate_{gate_index:03d}"
+            self.entity_id = f"sensor.{prefix}_{short.lower()}_gate_{gate_index:03d}"
             self._attr_unique_id = f"{DOMAIN}_{mac}_gate_{gate_index}"
             identifiers = {(DOMAIN, mac)}
         else:
@@ -130,7 +134,7 @@ class Wb2RadarGateSensor(CoordinatorEntity[Wb2Coordinator], SensorEntity):
             "name": device_name,
             "manufacturer": "Ai-Thinker",
             "model": model,
-            "sw_version": "0.7.0",
+            "sw_version": sw_version,
         }
 
     @property
@@ -159,6 +163,7 @@ class Wb2RadarDebugSensor(CoordinatorEntity[Wb2Coordinator], SensorEntity):
         coordinator: Wb2Coordinator,
         device_name: str,
         model: str,
+        sw_version: str | None,
         host: str,
         port: int,
         mac: str | None,
@@ -170,8 +175,9 @@ class Wb2RadarDebugSensor(CoordinatorEntity[Wb2Coordinator], SensorEntity):
         self._field_name = field_name
 
         short = short_mac(mac)
+        prefix = model_to_prefix(model, dtype)
         if short:
-            self.entity_id = f"sensor.{dtype}_{short.lower()}_{field_name}"
+            self.entity_id = f"sensor.{prefix}_{short.lower()}_{field_name}"
             self._attr_unique_id = f"{DOMAIN}_{mac}_{field_name}"
             identifiers = {(DOMAIN, mac)}
         else:
@@ -184,7 +190,7 @@ class Wb2RadarDebugSensor(CoordinatorEntity[Wb2Coordinator], SensorEntity):
             "name": device_name,
             "manufacturer": "Ai-Thinker",
             "model": model,
-            "sw_version": "0.7.0",
+            "sw_version": sw_version,
         }
 
     @property

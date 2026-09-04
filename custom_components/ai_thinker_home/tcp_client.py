@@ -21,11 +21,14 @@ class Wb2State:
     on1: int | None = None
     on2: int | None = None
     motion: int | None = None
+    presence: int | None = None
+    push: int | None = None
     count: int | None = None
     mac: str | None = None
     type: str | None = None
     name: str | None = None
     model: str | None = None
+    sw_version: str | None = None
     names: list[str] | None = None
     # Radar gate energy values (8 gates, 75cm each)
     g0: int | None = None
@@ -51,11 +54,14 @@ class Wb2State:
             on1=int(data["on1"]) if "on1" in data else None,
             on2=int(data["on2"]) if "on2" in data else None,
             motion=int(data["motion"]) if "motion" in data else None,
+            presence=int(data["presence"]) if "presence" in data else None,
+            push=int(data["push"]) if "push" in data else None,
             count=int(data["count"]) if "count" in data else None,
             mac=data.get("mac"),
             type=data.get("type"),
             name=data.get("name"),
             model=data.get("model"),
+            sw_version=data.get("sw_version"),
             names=names if isinstance(names, list) else None,
             g0=int(data["g0"]) if "g0" in data else None,
             g1=int(data["g1"]) if "g1" in data else None,
@@ -171,6 +177,7 @@ async def probe_device(
                 all(k in data for k in ("r", "g", "b"))
                 or "on" in data
                 or "motion" in data
+                or "presence" in data
             )
         ):
             return None

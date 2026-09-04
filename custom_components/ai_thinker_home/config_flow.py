@@ -259,9 +259,11 @@ class Wb2ConfigFlow(ConfigFlow, domain=DOMAIN):
         mac = state.mac if state else None
         short = short_mac(mac)
         dtype = state.type if state else DEFAULT_TYPE
+        model = state.model if state else None
         default_name = "Switch" if dtype == DEVICE_TYPE_SWITCH else DEFAULT_NAME
+        title = f"{model} {short}" if (model and short) else f"WB2 {short}" if short else f"WB2 {host}"
         return self.async_create_entry(
-            title=f"WB2 {short}" if short else f"WB2 {host}",
+            title=title,
             data={
                 CONF_HOST: host,
                 CONF_PORT: port,

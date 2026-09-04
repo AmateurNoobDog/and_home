@@ -34,3 +34,15 @@ def short_mac(mac: str | None) -> str:
         return ""
     cleaned = mac.replace(":", "").replace("-", "").upper()
     return cleaned[-6:] if len(cleaned) >= 6 else cleaned
+
+
+def model_to_prefix(model: str | None, dtype: str) -> str:
+    """Convert device model to entity ID prefix.
+
+    "RD-01" -> "rd01"
+    "Ai-WB2-12F" -> "ai_wb2_12f"
+    None -> dtype (fallback)
+    """
+    if not model:
+        return dtype
+    return model.lower().replace("-", "_")

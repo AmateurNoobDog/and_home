@@ -20,6 +20,7 @@ from .const import (
     DEFAULT_TYPE,
     DEVICE_TYPE_RADAR,
     DOMAIN,
+    model_to_prefix,
     short_mac,
 )
 from .coordinator import Wb2Coordinator
@@ -45,6 +46,8 @@ async def async_setup_entry(
 
     device_name = coordinator.data.name if coordinator.data and coordinator.data.name else base_name
     model = coordinator.data.model if coordinator.data and coordinator.data.model else DEFAULT_MODEL
+    sw_version = coordinator.data.sw_version if coordinator.data else None
+    prefix = model_to_prefix(model, dtype)
 
     short = short_mac(mac)
     if short:
@@ -57,12 +60,12 @@ async def async_setup_entry(
         "name": device_name,
         "manufacturer": "Ai-Thinker",
         "model": model,
-        "sw_version": "0.7.0",
+        "sw_version": sw_version,
     }
 
     entities = [
-        Wb2CalibrateButton(coordinator, device_name, mac, host, port, device_info),
-        Wb2RestoreButton(coordinator, device_name, mac, host, port, device_info),
+        Wb2CalibrateButton(coordinator, device_name, mac, host, port, device_info, prefix),
+        Wb2RestoreButton(coordinator, device_name, mac, host, port, device_info, prefix),
     ]
     async_add_entities(entities)
 
@@ -81,11 +84,12 @@ class Wb2CalibrateButton(ButtonEntity):
         host: str,
         port: int,
         device_info: dict,
+        prefix: str,
     ) -> None:
         self.coordinator = coordinator
         short = short_mac(mac)
         if short:
-            self.entity_id = f"button.{DOMAIN}_{short.lower()}_calibrate"
+            self.entity_id = f"button.{prefix}_{short.lower()}_calibrate"
             self._attr_unique_id = f"{DOMAIN}_{mac}_calibrate"
         else:
             self._attr_unique_id = f"{DOMAIN}_{host}_{port}_calibrate"
@@ -115,11 +119,12 @@ class Wb2RestoreButton(ButtonEntity):
         host: str,
         port: int,
         device_info: dict,
+        prefix: str,
     ) -> None:
         self.coordinator = coordinator
         short = short_mac(mac)
         if short:
-            self.entity_id = f"button.{DOMAIN}_{short.lower()}_restore"
+            self.entity_id = f"button.{prefix}_{short.lower()}_restore"
             self._attr_unique_id = f"{DOMAIN}_{mac}_restore"
         else:
             self._attr_unique_id = f"{DOMAIN}_{host}_{port}_restore"

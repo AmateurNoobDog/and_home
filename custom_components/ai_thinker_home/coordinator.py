@@ -51,3 +51,7 @@ class Wb2Coordinator(DataUpdateCoordinator[Wb2State]):
     async def async_restore_defaults(self) -> dict:
         """Restore radar default parameters."""
         return await self.client.restore_defaults()
+
+    async def async_push_update(self, state: Wb2State) -> None:
+        """Accept a push update from the PushServer."""
+        self.async_set_updated_data(state)

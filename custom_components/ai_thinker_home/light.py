@@ -25,6 +25,7 @@ from .const import (
     DEFAULT_TYPE,
     DEVICE_TYPE_LIGHT,
     DOMAIN,
+    model_to_prefix,
     short_mac,
 )
 from .coordinator import Wb2Coordinator
@@ -47,19 +48,20 @@ async def async_setup_entry(
     base_name: str = entry.data.get(CONF_DEVICE_NAME, DEFAULT_NAME)
     mac: str | None = entry.data.get(CONF_MAC)
 
-    seq = _next_sequence(hass, mac, dtype)
+    seq = _next_sequence(hass, mac, dtype, model)
     device_name = coordinator.data.name if coordinator.data and coordinator.data.name else base_name
     model = coordinator.data.model if coordinator.data and coordinator.data.model else DEFAULT_MODEL
+    sw_version = coordinator.data.sw_version if coordinator.data else None
     async_add_entities(
-        [Wb2Light(coordinator, device_name, model, host, port, mac, dtype, seq)]
+        [Wb2Light(coordinator, device_name, model, sw_version, host, port, mac, dtype, seq)]
     )
 
 
-def _next_sequence(hass: HomeAssistant, mac: str | None, dtype: str) -> int:
+def _next_sequence(hass: HomeAssistant, mac: str | None, dtype: str, model: str | None = None) -> int:
     """Return the next entity sequence number for (mac, light)."""
     if not mac:
         return 1
-    prefix = f"light.{dtype}_{short_mac(mac).lower()}_light_"
+    prefix = f"light.{model_to_prefix(model, dtype)}_{short_mac(mac).lower()}_light_"
     seq = 1
     for entity in async_get_entity_registry(hass).entities.values():
         eid = entity.entity_id or ""
@@ -82,6 +84,7 @@ class Wb2Light(CoordinatorEntity[Wb2Coordinator], LightEntity):
         coordinator: Wb2Coordinator,
         base_name: str,
         model: str,
+        sw_version: str | None,
         host: str,
         port: int,
         mac: str | None,
@@ -90,8 +93,9 @@ class Wb2Light(CoordinatorEntity[Wb2Coordinator], LightEntity):
     ) -> None:
         super().__init__(coordinator)
         short = short_mac(mac)
+        prefix = model_to_prefix(model, dtype)
         if short:
-            self.entity_id = f"light.{dtype}_{short.lower()}_light_{seq:03d}"
+            self.entity_id = f"light.{prefix}_{short.lower()}_light_{seq:03d}"
             self._attr_unique_id = f"{DOMAIN}_{mac}_light"
             identifiers = {(DOMAIN, mac)}
         else:
@@ -103,7 +107,7 @@ class Wb2Light(CoordinatorEntity[Wb2Coordinator], LightEntity):
             "name": base_name,
             "manufacturer": "Ai-Thinker",
             "model": model,
-            "sw_version": "0.6.0",
+            "sw_version": sw_version,
         }
         self._last_color: tuple[int, int, int] = (255, 255, 255)
 

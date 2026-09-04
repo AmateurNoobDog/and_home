@@ -40,6 +40,17 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = coordinator
 
+    # Check if device supports push reporting
+    state = coordinator.data
+    if state and getattr(state, "push", None):
+        from .push_server import PushServer
+
+        push_server = PushServer.get_instance(hass)
+        await push_server.async_start()
+        mac = entry.data.get(CONF_MAC)
+        if mac:
+            push_server.register(mac, coordinator)
+
     await hass.config_entries.async_forward_entry_setups(entry, _platforms_for(entry))
     entry.async_on_unload(coordinator.async_shutdown)
 
@@ -54,5 +65,13 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     coordinator: Wb2Coordinator = hass.data[DOMAIN].pop(entry.entry_id)
     await coordinator.client.close()
+
+    # Unregister from push server
+    mac = entry.data.get(CONF_MAC)
+    if mac:
+        from .push_server import PushServer
+
+        push_server = PushServer.get_instance(hass)
+        push_server.unregister(mac)
 
     return unload_ok

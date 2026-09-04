@@ -19,6 +19,7 @@ from .const import (
     DEFAULT_SWITCH_COUNT,
     DEFAULT_TYPE,
     DOMAIN,
+    model_to_prefix,
     short_mac,
 )
 from .coordinator import Wb2Coordinator
@@ -39,12 +40,13 @@ async def async_setup_entry(
 
     device_name = coordinator.data.name if coordinator.data and coordinator.data.name else base_name
     model = coordinator.data.model if coordinator.data and coordinator.data.model else DEFAULT_MODEL
+    sw_version = coordinator.data.sw_version if coordinator.data else None
     names = coordinator.data.names if coordinator.data else None
     count = _channel_count(coordinator)
 
     async_add_entities(
         Wb2Switch(
-            coordinator, device_name, model, names, host, port, mac, dtype, channel
+            coordinator, device_name, model, sw_version, names, host, port, mac, dtype, channel
         )
         for channel in range(count)
     )
@@ -67,6 +69,7 @@ class Wb2Switch(CoordinatorEntity[Wb2Coordinator], SwitchEntity):
         coordinator: Wb2Coordinator,
         device_name: str,
         model: str,
+        sw_version: str | None,
         names: list[str] | None,
         host: str,
         port: int,
@@ -77,8 +80,9 @@ class Wb2Switch(CoordinatorEntity[Wb2Coordinator], SwitchEntity):
         super().__init__(coordinator)
         self._channel = channel
         short = short_mac(mac)
+        prefix = model_to_prefix(model, dtype)
         if short:
-            self.entity_id = f"switch.{dtype}_{short.lower()}_switch_{channel + 1:03d}"
+            self.entity_id = f"switch.{prefix}_{short.lower()}_switch_{channel + 1:03d}"
             self._attr_unique_id = f"{DOMAIN}_{mac}_switch_{channel}"
             identifiers = {(DOMAIN, mac)}
         else:
@@ -95,7 +99,7 @@ class Wb2Switch(CoordinatorEntity[Wb2Coordinator], SwitchEntity):
             "name": device_name,
             "manufacturer": "Ai-Thinker",
             "model": model,
-            "sw_version": "0.6.0",
+            "sw_version": sw_version,
         }
 
     @property
