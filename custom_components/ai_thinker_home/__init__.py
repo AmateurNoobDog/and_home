@@ -13,7 +13,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 
-from .const import CONF_HOST, CONF_PORT, CONF_TYPE, DEVICE_TYPE_LIGHT, DEVICE_TYPE_RADAR, DEVICE_TYPE_SWITCH, DOMAIN
+from .const import CONF_HOST, CONF_PORT, CONF_MAC, CONF_TYPE, DEVICE_TYPE_LIGHT, DEVICE_TYPE_RADAR, DEVICE_TYPE_SWITCH, DOMAIN
 from .coordinator import Wb2Coordinator
 from .tcp_client import Wb2Client
 
