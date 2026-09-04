@@ -48,10 +48,10 @@ async def async_setup_entry(
     base_name: str = entry.data.get(CONF_DEVICE_NAME, DEFAULT_NAME)
     mac: str | None = entry.data.get(CONF_MAC)
 
-    seq = _next_sequence(hass, mac, dtype, model)
     device_name = coordinator.data.name if coordinator.data and coordinator.data.name else base_name
     model = coordinator.data.model if coordinator.data and coordinator.data.model else DEFAULT_MODEL
     sw_version = coordinator.data.sw_version if coordinator.data else None
+    seq = _next_sequence(hass, mac, dtype, model)
     async_add_entities(
         [Wb2Light(coordinator, device_name, model, sw_version, host, port, mac, dtype, seq)]
     )
