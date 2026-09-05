@@ -110,11 +110,14 @@ class Wb2Light(CoordinatorEntity[Wb2Coordinator], LightEntity):
             "sw_version": sw_version,
         }
         self._last_color: tuple[int, int, int] = (255, 255, 255)
+        self._last_brightness: int = _LEVEL_MAX
 
     def _handle_coordinator_update(self) -> None:
         state = self.coordinator.data
-        if state is not None and (state.r or state.g or state.b):
-            self._last_color = (state.r, state.g, state.b)
+        if state is not None:
+            if state.r or state.g or state.b:
+                self._last_color = (state.r, state.g, state.b)
+            self._last_brightness = max(state.r, state.g, state.b) or _LEVEL_MAX
         super()._handle_coordinator_update()
 
     @property
@@ -149,12 +152,12 @@ class Wb2Light(CoordinatorEntity[Wb2Coordinator], LightEntity):
         else:
             r, g, b = self._last_color
 
-        if ATTR_BRIGHTNESS in kwargs:
+        if ATTR_BRIGHTNESS in kwargs and ATTR_RGB_COLOR not in kwargs:
             brightness = kwargs[ATTR_BRIGHTNESS]
             if brightness <= 0:
                 brightness = _LEVEL_MAX
         else:
-            brightness = self.brightness or _LEVEL_MAX
+            brightness = self._last_brightness or _LEVEL_MAX
 
         current = max(r, g, b)
         if current == 0:
@@ -168,6 +171,7 @@ class Wb2Light(CoordinatorEntity[Wb2Coordinator], LightEntity):
             r = g = b = brightness
 
         self._last_color = (r, g, b)
+        self._last_brightness = brightness
         await self.coordinator.client.set_state(r=r, g=g, b=b)
         await self.coordinator.async_request_refresh()
 
