@@ -146,7 +146,6 @@ class Wb2Light(CoordinatorEntity[Wb2Coordinator], LightEntity):
         """Turn the light on with optional color/brightness."""
         if ATTR_RGB_COLOR in kwargs:
             r, g, b = kwargs[ATTR_RGB_COLOR]
-            self._last_color = (r, g, b)
         else:
             r, g, b = self._last_color
 
@@ -154,18 +153,19 @@ class Wb2Light(CoordinatorEntity[Wb2Coordinator], LightEntity):
             brightness = kwargs[ATTR_BRIGHTNESS]
             if brightness <= 0:
                 brightness = _LEVEL_MAX
-            current = max(r, g, b)
-            if current == 0:
-                r = g = b = brightness
-            else:
-                scale = brightness / current
-                r = min(255, round(r * scale))
-                g = min(255, round(g * scale))
-                b = min(255, round(b * scale))
-            if r == 0 and g == 0 and b == 0:
-                r = g = b = brightness
-        elif r == 0 and g == 0 and b == 0:
-            r = g = b = _LEVEL_MAX
+        else:
+            brightness = self.brightness or _LEVEL_MAX
+
+        current = max(r, g, b)
+        if current == 0:
+            r = g = b = brightness
+        else:
+            scale = brightness / current
+            r = min(255, round(r * scale))
+            g = min(255, round(g * scale))
+            b = min(255, round(b * scale))
+        if r == 0 and g == 0 and b == 0:
+            r = g = b = brightness
 
         self._last_color = (r, g, b)
         await self.coordinator.client.set_state(r=r, g=g, b=b)
