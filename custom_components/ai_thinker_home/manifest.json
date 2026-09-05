@@ -7,5 +7,5 @@
   "documentation": "https://gitee.com/amateur-dog/ha_ai_thinker_home",
   "iot_class": "local_polling",
   "requirements": [],
-  "version": "0.8.1"
+  "version": "0.8.2"
 }

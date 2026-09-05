@@ -182,12 +182,17 @@ class Wb2ConfigFlow(ConfigFlow, domain=DOMAIN):
     ) -> ConfigFlowResult:
         """Show scan results or create an entry for a scanned device."""
         if CONF_HOST not in (user_input or {}):
+            existing_hosts = {
+                entry.data.get(CONF_HOST)
+                for entry in self._async_current_entries()
+            }
             options: list[SelectOptionDict] = [
                 SelectOptionDict(
                     value=host,
                     label=f"{host} ({short_mac(state.mac) or host})",
                 )
                 for host, state in sorted((self._scan_found or {}).items())
+                if host not in existing_hosts
             ]
             options.append(
                 SelectOptionDict(value=MANUAL_OPTION, label="手动输入 IP 地址")
