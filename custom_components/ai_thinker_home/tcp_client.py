@@ -17,6 +17,7 @@ class Wb2State:
     r: int = 0
     g: int = 0
     b: int = 0
+    brightness: int | None = None
     on: int | None = None
     on1: int | None = None
     on2: int | None = None
@@ -50,6 +51,7 @@ class Wb2State:
             r=int(data.get("r", 0)),
             g=int(data.get("g", 0)),
             b=int(data.get("b", 0)),
+            brightness=int(data["brightness"]) if "brightness" in data else None,
             on=int(data["on"]) if "on" in data else None,
             on1=int(data["on1"]) if "on1" in data else None,
             on2=int(data["on2"]) if "on2" in data else None,
@@ -126,6 +128,7 @@ class Wb2Client:
         r: int | None = None,
         g: int | None = None,
         b: int | None = None,
+        brightness: int | None = None,
         on: bool | None = None,
         channel: int = 0,
     ) -> Wb2State:
@@ -136,6 +139,8 @@ class Wb2Client:
             cmd["g"] = g
         if b is not None:
             cmd["b"] = b
+        if brightness is not None:
+            cmd["brightness"] = brightness
         if on is not None:
             key = "on" if channel == 0 else f"on{channel}"
             cmd[key] = int(on)

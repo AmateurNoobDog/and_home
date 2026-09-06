@@ -117,7 +117,8 @@ class Wb2Light(CoordinatorEntity[Wb2Coordinator], LightEntity):
         if state is not None:
             if state.r or state.g or state.b:
                 self._last_color = (state.r, state.g, state.b)
-            self._last_brightness = max(state.r, state.g, state.b) or _LEVEL_MAX
+            if state.brightness is not None:
+                self._last_brightness = state.brightness
         super()._handle_coordinator_update()
 
     @property
@@ -139,6 +140,8 @@ class Wb2Light(CoordinatorEntity[Wb2Coordinator], LightEntity):
         state = self.coordinator.data
         if state is None:
             return None
+        if state.brightness is not None:
+            return state.brightness
         return max(state.r, state.g, state.b)
 
     @property
@@ -147,32 +150,23 @@ class Wb2Light(CoordinatorEntity[Wb2Coordinator], LightEntity):
 
     async def async_turn_on(self, **kwargs) -> None:
         """Turn the light on with optional color/brightness."""
+        r = g = b = None
+        brightness = None
+
         if ATTR_RGB_COLOR in kwargs:
             r, g, b = kwargs[ATTR_RGB_COLOR]
-        else:
-            r, g, b = self._last_color
-
-        if ATTR_BRIGHTNESS in kwargs and ATTR_RGB_COLOR not in kwargs:
+        if ATTR_BRIGHTNESS in kwargs:
             brightness = kwargs[ATTR_BRIGHTNESS]
-            if brightness <= 0:
-                brightness = _LEVEL_MAX
-        else:
-            brightness = self._last_brightness or _LEVEL_MAX
 
-        current = max(r, g, b)
-        if current == 0:
-            r = g = b = brightness
-        else:
-            scale = brightness / current
-            r = min(255, round(r * scale))
-            g = min(255, round(g * scale))
-            b = min(255, round(b * scale))
-        if r == 0 and g == 0 and b == 0:
-            r = g = b = brightness
+        if r is None:
+            r, g, b = self._last_color
+        if brightness is None:
+            brightness = self._last_brightness
 
         self._last_color = (r, g, b)
         self._last_brightness = brightness
-        await self.coordinator.client.set_state(r=r, g=g, b=b)
+
+        await self.coordinator.client.set_state(r=r, g=g, b=b, brightness=brightness)
         await self.coordinator.async_request_refresh()
 
     async def async_turn_off(self, **kwargs) -> None:
