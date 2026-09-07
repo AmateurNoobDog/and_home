@@ -8,6 +8,7 @@ import logging
 from typing import Any
 
 from homeassistant.components.network import async_get_adapters
+from homeassistant.helpers.service_info.zeroconf import ZeroconfServiceInfo
 from homeassistant.config_entries import ConfigFlow, ConfigFlowResult
 from homeassistant.const import CONF_HOST, CONF_PORT
 from homeassistant.core import HomeAssistant
@@ -31,6 +32,7 @@ from .const import (
     DEFAULT_PORT,
     DEFAULT_TYPE,
     DOMAIN,
+    MDNS_SERVICE_TYPE,
     SCAN_TIMEOUT,
     short_mac,
 )
@@ -241,6 +243,70 @@ class Wb2ConfigFlow(ConfigFlow, domain=DOMAIN):
             step_id="manual", data_schema=self._manual_schema()
         )
 
+    async def async_step_zeroconf(
+        self, discovery_info: ZeroconfServiceInfo
+    ) -> ConfigFlowResult:
+        """Handle zeroconf discovery."""
+        name = discovery_info.name
+        host_ip = str(discovery_info.ip_address)
+        props = discovery_info.properties
+        port = int(props.get("port", DEFAULT_PORT))
+
+        instance = name.split(".")[0]
+        parts = instance.split("-", 2)
+        dtype = parts[1] if len(parts) > 1 else DEFAULT_TYPE
+        mac_suffix = parts[2] if len(parts) > 2 else ""
+
+        for entry in self._async_current_entries():
+            entry_host = entry.data.get(CONF_HOST)
+            if entry_host == instance:
+                return self.async_abort(reason="already_configured")
+            entry_mac = entry.data.get(CONF_MAC, "")
+            if mac_suffix and entry_mac and entry_mac.endswith(mac_suffix):
+                return self.async_abort(reason="already_configured")
+
+        await self.async_set_unique_id(mac_suffix)
+        self._abort_if_unique_id_configured()
+
+        self._discovery_info = {
+            "host": instance,
+            "host_ip": host_ip,
+            "port": port,
+            "type": dtype,
+            "mac_suffix": mac_suffix,
+            "instance": instance,
+        }
+
+        state = await probe_device(host_ip, port, timeout=1.0)
+        if state and state.model and state.name:
+            display_name = f"{state.model} {state.name}"
+        elif state and state.model:
+            display_name = state.model
+        else:
+            display_name = instance
+
+        self.context["title_placeholders"] = {"name": display_name}
+        return self.async_show_form(
+            step_id="zeroconf_confirm",
+            description_placeholders={"name": display_name},
+        )
+
+    async def async_step_zeroconf_confirm(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Confirm zeroconf discovery."""
+        info = self._discovery_info
+        if info is None:
+            return self.async_abort(reason="cannot_connect")
+
+        state = await probe_device(info["host_ip"], info["port"], timeout=1.0)
+        if state is None:
+            return self.async_abort(reason="cannot_connect")
+
+        return await self._create_entry(
+            info["host"], info["port"], state, host_ip=info["host_ip"]
+        )
+
     @staticmethod
     def _manual_schema(host: str | None = None, port: int = DEFAULT_PORT) -> vol.Schema:
         return vol.Schema(
@@ -253,7 +319,8 @@ class Wb2ConfigFlow(ConfigFlow, domain=DOMAIN):
         )
 
     async def _create_entry(
-        self, host: str, port: int, state: Wb2State | None = None
+        self, host: str, port: int, state: Wb2State | None = None,
+        host_ip: str | None = None,
     ) -> ConfigFlowResult:
         for existing in self._async_current_entries():
             if (
@@ -266,14 +333,22 @@ class Wb2ConfigFlow(ConfigFlow, domain=DOMAIN):
         dtype = state.type if state else DEFAULT_TYPE
         model = state.model if state else None
         default_name = "Switch" if dtype == DEVICE_TYPE_SWITCH else DEFAULT_NAME
-        title = f"{model} {short}" if (model and short) else f"WB2 {short}" if short else f"WB2 {host}"
-        return self.async_create_entry(
-            title=title,
-            data={
-                CONF_HOST: host,
-                CONF_PORT: port,
-                CONF_DEVICE_NAME: state.name if state and state.name else default_name,
-                CONF_MAC: mac,
-                CONF_TYPE: dtype,
-            },
-        )
+        dev_name = state.name if state and state.name else None
+        if model and dev_name:
+            title = f"{model} {dev_name}"
+        elif model and short:
+            title = f"{model} {short}"
+        elif short:
+            title = f"AI-Thinker {short}"
+        else:
+            title = f"AI-Thinker {host}"
+        data = {
+            CONF_HOST: host,
+            CONF_PORT: port,
+            CONF_DEVICE_NAME: state.name if state and state.name else default_name,
+            CONF_MAC: mac,
+            CONF_TYPE: dtype,
+        }
+        if host_ip:
+            data["host_ip"] = host_ip
+        return self.async_create_entry(title=title, data=data)

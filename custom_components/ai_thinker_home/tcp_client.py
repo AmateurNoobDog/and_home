@@ -6,6 +6,7 @@ import asyncio
 from dataclasses import dataclass
 import json
 import logging
+import socket
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -91,17 +92,33 @@ class Wb2Client:
     opens a fresh connection instead of reusing a possibly-dead one.
     """
 
-    def __init__(self, host: str, port: int, timeout: float = 3.0) -> None:
+    def __init__(self, host: str, port: int, timeout: float = 3.0,
+                 host_ip: str | None = None) -> None:
         self.host = host
+        self.host_ip = host_ip
         self.port = port
         self.timeout = timeout
         self._lock = asyncio.Lock()
 
-    async def _request(self, payload: str) -> dict:
-        async with self._lock:
-            reader, writer = await asyncio.wait_for(
+    async def _open_connection(self):
+        """Open TCP connection with DNS fallback to cached IP."""
+        try:
+            return await asyncio.wait_for(
                 asyncio.open_connection(self.host, self.port), timeout=self.timeout
             )
+        except socket.gaierror:
+            if self.host_ip and self.host_ip != self.host:
+                _LOGGER.debug("DNS failed for %s, trying fallback %s",
+                              self.host, self.host_ip)
+                return await asyncio.wait_for(
+                    asyncio.open_connection(self.host_ip, self.port),
+                    timeout=self.timeout,
+                )
+            raise
+
+    async def _request(self, payload: str) -> dict:
+        async with self._lock:
+            reader, writer = await self._open_connection()
             try:
                 writer.write((payload + "\n").encode())
                 await writer.drain()

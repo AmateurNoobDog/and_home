@@ -33,8 +33,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up WB2 from a config entry."""
     host: str = entry.data[CONF_HOST]
     port: int = entry.data[CONF_PORT]
+    host_ip: str | None = entry.data.get("host_ip")
 
-    client = Wb2Client(host, port)
+    client = Wb2Client(host, port, host_ip=host_ip)
     coordinator = Wb2Coordinator(hass, client)
     await coordinator.async_config_entry_first_refresh()
 

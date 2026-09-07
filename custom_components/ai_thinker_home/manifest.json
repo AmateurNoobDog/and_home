@@ -7,5 +7,8 @@
   "documentation": "https://gitee.com/amateur-dog/ha_ai_thinker_home",
   "iot_class": "local_polling",
   "requirements": [],
-  "version": "0.8.5"
+  "zeroconf": [
+    {"type": "_aitinker._tcp.local.", "name": "ai-*"}
+  ],
+  "version": "0.9.0"
 }

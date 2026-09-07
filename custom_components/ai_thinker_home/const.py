@@ -10,10 +10,10 @@ CONF_TYPE = "type"
 
 DEFAULT_PORT = 9100
 DEFAULT_NAME = "Light"
-DEFAULT_TYPE = "wb2"
+DEFAULT_TYPE = "light"
 
-DEVICE_TYPE_LIGHT = "wb2"
-DEVICE_TYPE_SWITCH = "sw"
+DEVICE_TYPE_LIGHT = "light"
+DEVICE_TYPE_SWITCH = "switch"
 DEVICE_TYPE_RADAR = "radar"
 
 DEFAULT_MODEL = "Ai-Thinker"
@@ -21,6 +21,8 @@ DEFAULT_SWITCH_COUNT = 3
 
 SCAN_TIMEOUT = 0.3
 POLL_INTERVAL = 1
+
+MDNS_SERVICE_TYPE = "_aitinker._tcp"
 
 # Radar debug switches (must match firmware app_config.h)
 RADAR_GATE_DATA_ENABLE = False  # 门数据开关

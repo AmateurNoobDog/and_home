@@ -23,6 +23,10 @@
       "manual": {
         "title": "Manually enter device",
         "description": "Enter the IP address and TCP port of your WB2 device."
+      },
+      "zeroconf_confirm": {
+        "title": "发现 Ai-Thinker 设备",
+        "description": "发现设备 **{name}**，是否添加？"
       }
     },
     "progress": {
