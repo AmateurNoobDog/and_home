@@ -19,7 +19,7 @@ Ai-Thinker WB2 系列设备使用 **TCP Socket + JSON 行协议** 进行通信�
 | 端口 | 9100 | 设备 TCP 监听端口 |
 | 超时 | 3.0 秒 | 正常请求超时 |
 | 扫描超时 | 0.3 秒 | 设备发现时的超时时间 |
-| 轮询间隔 | 3 秒 | Home Assistant 状态更新频率 |
+| 轮询间隔 | 1 秒 | Home Assistant 状态更新频率 |
 
 ---
 
@@ -43,6 +43,12 @@ Ai-Thinker WB2 系列设备使用 **TCP Socket + JSON 行协议** 进行通信�
 {"cmd":"set","r":255,"g":0,"b":128}\n
 ```
 
+**设置亮度** (适用于 RGB 灯设备):
+
+```json
+{"cmd":"set","brightness":128}\n
+```
+
 **控制继电器开关** (适用于开关设备):
 
 ```json
@@ -64,6 +70,7 @@ Ai-Thinker WB2 系列设备使用 **TCP Socket + JSON 行协议** 进行通信�
 | `r` | int | 否 | 红色通道值 (0-255) |
 | `g` | int | 否 | 绿色通道值 (0-255) |
 | `b` | int | 否 | 蓝色通道值 (0-255) |
+| `brightness` | int | 否 | 亮度值 (0-255) |
 | `on` | int | 否 | 通道 0 开关状态 (0=关闭, 1=打开) |
 | `on1` | int | 否 | 通道 1 开关状态 (0=关闭, 1=打开) |
 | `on2` | int | 否 | 通道 2 开关状态 (0=关闭, 1=打开) |
@@ -78,7 +85,7 @@ Ai-Thinker WB2 系列设备使用 **TCP Socket + JSON 行协议** 进行通信�
 ### 完整响应示例
 
 ```json
-{"r":255,"g":128,"b":64,"on":1,"on1":0,"on2":1,"motion":0,"count":3,"mac":"AA:BB:CC:DD:EE:FF","type":"wb2","name":"客厅灯","model":"Ai-Thinker","names":["主灯","氛围灯","射灯"]}
+{"r":255,"g":128,"b":64,"brightness":200,"on":1,"on1":0,"on2":1,"motion":0,"count":3,"mac":"AA:BB:CC:DD:EE:FF","type":"light","name":"客厅灯","model":"Ai-Thinker","names":["主灯","氛围灯","射灯"]}
 ```
 
 ### 响应字段说明
@@ -88,6 +95,7 @@ Ai-Thinker WB2 系列设备使用 **TCP Socket + JSON 行协议** 进行通信�
 | `r` | int | 红色通道当前值 (0-255)，默认 0 |
 | `g` | int | 绿色通道当前值 (0-255)，默认 0 |
 | `b` | int | 蓝色通道当前值 (0-255)，默认 0 |
+| `brightness` | int/None | 亮度当前值 (0-255) |
 | `on` | int/None | 通道 0 开关状态 (0 或 1) |
 | `on1` | int/None | 通道 1 开关状态 (0 或 1) |
 | `on2` | int/None | 通道 2 开关状态 (0 或 1) |
@@ -113,20 +121,20 @@ Ai-Thinker WB2 系列设备使用 **TCP Socket + JSON 行协议** 进行通信�
 
 | 类型代码 | 常量名 | Home Assistant 平台 | 说明 |
 |----------|--------|---------------------|------|
-| `wb2` | `DEVICE_TYPE_LIGHT` | `light` | RGB LED 灯，支持颜色控制 |
-| `sw` | `DEVICE_TYPE_SWITCH` | `switch` | 多通道继电器开关，支持独立控制 |
+| `light` | `DEVICE_TYPE_LIGHT` | `light` | RGB LED 灯，支持颜色控制 |
+| `switch` | `DEVICE_TYPE_SWITCH` | `switch` | 多通道继电器开关，支持独立控制 |
 | `radar` | `DEVICE_TYPE_RADAR` | `binary_sensor` | 雷达存在/运动检测传感器 |
 
-### wb2 (RGB 灯)
+### light (RGB 灯)
 
 支持功能：
 - 颜色控制 (RGB)
 - 亮度调节
 - 开关控制
 
-支持字段：`r`, `g`, `b`, `on`
+支持字段：`r`, `g`, `b`, `brightness`, `on`
 
-### sw (继电器开关)
+### switch (继电器开关)
 
 支持功能：
 - 多通道独立开关控制
@@ -146,7 +154,20 @@ Ai-Thinker WB2 系列设备使用 **TCP Socket + JSON 行协议** 进行通信�
 
 ## 设备发现机制
 
-Home Assistant 集成支持局域网自动扫描发现设备：
+Home Assistant 集成支持两种设备发现方式：
+
+### Zeroconf / mDNS 自动发现
+
+设备通过 mDNS 广播 `_aitinker._tcp` 服务类型，Home Assistant 可自动发现局域网内的 Ai-Thinker 设备：
+
+1. **服务类型**: `_aitinker._tcp.local.`
+2. **设备名称格式**: `ai-{type}-{mac_suffix}` (如 `ai-light-AABBCC`)
+3. **发现流程**: 设备广播 → HA 自动识别 → 用户确认添加
+4. **DNS 回退**: 连接失败时自动使用缓存 IP 地址
+
+### TCP 扫描发现
+
+如果 Zeroconf 发现失败，还可以通过 TCP 扫描发现设备：
 
 1. **扫描范围**: 遍历所有本地网络接口，生成每个子网的 1-254 地址
 2. **扫描端口**: 9100
@@ -154,7 +175,7 @@ Home Assistant 集成支持局域网自动扫描发现设备：
 4. **扫描超时**: 每个设备 0.3 秒
 5. **验证方法**: 发送 `{"cmd":"get"}` 命令，检查响应是否包含有效设备标识
 
-如果扫描失败，用户可以手动输入设备 IP 地址。
+如果自动发现失败，用户可以手动输入设备 IP 地址。
 
 ---
 
@@ -164,18 +185,21 @@ Home Assistant 集成支持局域网自动扫描发现设备：
 # 连接参数
 DEFAULT_PORT = 9100
 SCAN_TIMEOUT = 0.3  # 设备扫描超时（秒）
-POLL_INTERVAL = 3   # 状态轮询间隔（秒）
+POLL_INTERVAL = 1   # 状态轮询间隔（秒）
 
 # 设备类型
-DEVICE_TYPE_LIGHT = "wb2"
-DEVICE_TYPE_SWITCH = "sw"
+DEVICE_TYPE_LIGHT = "light"
+DEVICE_TYPE_SWITCH = "switch"
 DEVICE_TYPE_RADAR = "radar"
 
 # 默认值
 DEFAULT_NAME = "Light"
-DEFAULT_TYPE = "wb2"
+DEFAULT_TYPE = "light"
 DEFAULT_MODEL = "Ai-Thinker"
 DEFAULT_SWITCH_COUNT = 3
+
+# mDNS 服务类型
+MDNS_SERVICE_TYPE = "_aitinker._tcp"
 
 # 配置键名
 CONF_HOST = "host"
@@ -201,6 +225,7 @@ class Wb2State:
     r: int = 0
     g: int = 0
     b: int = 0
+    brightness: Optional[int] = None
     on: Optional[int] = None
     on1: Optional[int] = None
     on2: Optional[int] = None
@@ -220,6 +245,7 @@ class Wb2State:
             r=int(data.get("r", 0)),
             g=int(data.get("g", 0)),
             b=int(data.get("b", 0)),
+            brightness=int(data["brightness"]) if "brightness" in data else None,
             on=int(data["on"]) if "on" in data else None,
             on1=int(data["on1"]) if "on1" in data else None,
             on2=int(data["on2"]) if "on2" in data else None,
@@ -266,11 +292,13 @@ async def get_device_state(host: str, port: int = 9100):
         writer.close()
         await writer.wait_closed()
 
-async def set_rgb_color(host: str, r: int, g: int, b: int, port: int = 9100):
+async def set_rgb_color(host: str, r: int, g: int, b: int, brightness: int | None = None, port: int = 9100):
     """设置 RGB 颜色"""
     reader, writer = await asyncio.open_connection(host, port)
     try:
         cmd = {"cmd": "set", "r": r, "g": g, "b": b}
+        if brightness is not None:
+            cmd["brightness"] = brightness
         writer.write((json.dumps(cmd) + "\n").encode())
         await writer.drain()
         
@@ -324,6 +352,9 @@ echo '{"cmd":"get"}' | nc 192.168.1.100 9100
 
 # 设置 RGB 颜色
 echo '{"cmd":"set","r":255,"g":0,"b":128}' | nc 192.168.1.100 9100
+
+# 设置亮度
+echo '{"cmd":"set","brightness":128}' | nc 192.168.1.100 9100
 
 # 控制继电器
 echo '{"cmd":"set","on":1,"channel":0}' | nc 192.168.1.100 9100
