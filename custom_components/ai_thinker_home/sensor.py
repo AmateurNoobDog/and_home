@@ -1,4 +1,4 @@
-"""Support for the Ai-Thinker WB2 radar gate energy sensors."""
+"""Support for the Ai-Thinker WB2 sensors (radar gate + key sensor)."""
 
 from __future__ import annotations
 
@@ -21,6 +21,7 @@ from .const import (
     DEFAULT_MODEL,
     DEFAULT_NAME,
     DEFAULT_TYPE,
+    DEVICE_TYPE_KEY_SENSOR,
     DEVICE_TYPE_RADAR,
     DOMAIN,
     RADAR_GATE_DATA_ENABLE,
@@ -53,8 +54,42 @@ async def async_setup_entry(
     entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Set up the WB2 radar gate sensors from a config entry."""
+    """Set up the WB2 sensors from a config entry."""
     dtype: str = entry.data.get(CONF_TYPE, DEFAULT_TYPE)
+
+    if dtype == DEVICE_TYPE_KEY_SENSOR:
+        coordinator: Wb2Coordinator = hass.data[DOMAIN][entry.entry_id]
+        host: str = entry.data[CONF_HOST]
+        port: int = entry.data[CONF_PORT]
+        base_name: str = entry.data.get(CONF_DEVICE_NAME, DEFAULT_NAME)
+        mac: str | None = entry.data.get(CONF_MAC)
+
+        device_name = coordinator.data.name if coordinator.data and coordinator.data.name else base_name
+        model = coordinator.data.model if coordinator.data and coordinator.data.model else DEFAULT_MODEL
+        sw_version = coordinator.data.sw_version if coordinator.data else None
+        prefix = model_to_prefix(model, dtype)
+
+        short = short_mac(mac)
+        if short:
+            identifiers = {(DOMAIN, mac)}
+        else:
+            identifiers = {(DOMAIN, f"{host}:{port}")}
+
+        device_info = {
+            "identifiers": identifiers,
+            "name": device_name,
+            "manufacturer": "Ai-Thinker",
+            "model": model,
+            "sw_version": sw_version,
+        }
+
+        async_add_entities([
+            Wb2KeySensor(
+                coordinator, device_name, model, sw_version, host, port, mac, dtype, device_info, prefix,
+            )
+        ])
+        return
+
     if dtype != DEVICE_TYPE_RADAR:
         return
 
@@ -200,6 +235,49 @@ class Wb2RadarDebugSensor(CoordinatorEntity[Wb2Coordinator], SensorEntity):
         if state is None:
             return None
         return getattr(state, self._field_name, None)
+
+    @property
+    def available(self) -> bool:
+        return self.coordinator.last_update_success and super().available
+
+
+class Wb2KeySensor(CoordinatorEntity[Wb2Coordinator], SensorEntity):
+    """Sensor showing the last 433 key value."""
+
+    _attr_has_entity_name = True
+    _attr_icon = "mdi:remote"
+
+    def __init__(
+        self,
+        coordinator: Wb2Coordinator,
+        device_name: str,
+        model: str,
+        sw_version: str | None,
+        host: str,
+        port: int,
+        mac: str | None,
+        dtype: str,
+        device_info: dict,
+        prefix: str,
+    ) -> None:
+        super().__init__(coordinator)
+        short = short_mac(mac)
+        if short:
+            self.entity_id = f"sensor.{prefix}_{short.lower()}_key"
+            self._attr_unique_id = f"{DOMAIN}_{mac}_key"
+        else:
+            self._attr_unique_id = f"{DOMAIN}_{host}_{port}_key"
+
+        self._attr_name = "键值"
+        self._attr_device_info = device_info
+
+    @property
+    def native_value(self) -> str | None:
+        """Return the last key value from push data."""
+        state = self.coordinator.data
+        if state is None:
+            return None
+        return getattr(state, "key", None)
 
     @property
     def available(self) -> bool:

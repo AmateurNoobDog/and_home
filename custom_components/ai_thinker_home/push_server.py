@@ -46,10 +46,13 @@ class PushServer:
         """Start the TCP push server (idempotent)."""
         if self._server is not None:
             return
-        self._server = await asyncio.start_server(
-            self._handle_client, "0.0.0.0", PUSH_PORT
-        )
-        _LOGGER.info("Push server listening on port %d", PUSH_PORT)
+        try:
+            self._server = await asyncio.start_server(
+                self._handle_client, "0.0.0.0", PUSH_PORT
+            )
+            _LOGGER.info("Push server listening on port %d", PUSH_PORT)
+        except OSError as err:
+            _LOGGER.warning("Push server port %d already in use: %s", PUSH_PORT, err)
 
     async def _handle_client(
         self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter

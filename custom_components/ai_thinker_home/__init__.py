@@ -13,7 +13,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 
-from .const import CONF_HOST, CONF_PORT, CONF_MAC, CONF_TYPE, DEVICE_TYPE_LIGHT, DEVICE_TYPE_RADAR, DEVICE_TYPE_SWITCH, DOMAIN
+from .const import CONF_HOST, CONF_PORT, CONF_MAC, CONF_TYPE, DEVICE_TYPE_LIGHT, DEVICE_TYPE_RADAR, DEVICE_TYPE_SWITCH, DEVICE_TYPE_EVENT, DEVICE_TYPE_KEY_SENSOR, DOMAIN
 from .coordinator import Wb2Coordinator
 from .tcp_client import Wb2Client
 
@@ -26,6 +26,10 @@ def _platforms_for(entry: ConfigEntry) -> list[str]:
         return [SWITCH_DOMAIN]
     if entry.data.get(CONF_TYPE) == DEVICE_TYPE_RADAR:
         return [BINARY_SENSOR_DOMAIN, SENSOR_DOMAIN, BUTTON_DOMAIN]
+    if entry.data.get(CONF_TYPE) == DEVICE_TYPE_EVENT:
+        return ["event", BUTTON_DOMAIN]
+    if entry.data.get(CONF_TYPE) == DEVICE_TYPE_KEY_SENSOR:
+        return [SENSOR_DOMAIN, BUTTON_DOMAIN]
     return [LIGHT_DOMAIN]
 
 
@@ -41,16 +45,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = coordinator
 
-    # Check if device supports push reporting
-    state = coordinator.data
-    if state and getattr(state, "push", None):
-        from .push_server import PushServer
+    # Always register push server — push config comes from BluFi provisioning
+    from .push_server import PushServer
 
-        push_server = PushServer.get_instance(hass)
-        await push_server.async_start()
-        mac = entry.data.get(CONF_MAC)
-        if mac:
-            push_server.register(mac, coordinator)
+    push_server = PushServer.get_instance(hass)
+    await push_server.async_start()
+    mac = entry.data.get(CONF_MAC)
+    if mac:
+        push_server.register(mac, coordinator)
 
     await hass.config_entries.async_forward_entry_setups(entry, _platforms_for(entry))
     entry.async_on_unload(coordinator.async_shutdown)

@@ -2,3 +2,4 @@ home-assistant_*.log
 *.Zone.Identifier
 __pycache__
 *.pyc
+*.log:Zone.Identifier

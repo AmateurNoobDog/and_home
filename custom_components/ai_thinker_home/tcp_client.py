@@ -44,6 +44,9 @@ class Wb2State:
     # Debug counters
     scnt: int | None = None
     mcnt: int | None = None
+    # Event device fields
+    event: str | None = None
+    key: str | None = None
 
     @classmethod
     def from_dict(cls, data: dict) -> "Wb2State":
@@ -76,6 +79,8 @@ class Wb2State:
             g7=int(data["g7"]) if "g7" in data else None,
             scnt=int(data["scnt"]) if "scnt" in data else None,
             mcnt=int(data["mcnt"]) if "mcnt" in data else None,
+            event=data.get("event"),
+            key=data.get("key"),
         )
 
     def channel_state(self, channel: int) -> int | None:
@@ -148,20 +153,21 @@ class Wb2Client:
         brightness: int | None = None,
         on: bool | None = None,
         channel: int = 0,
+        cmd: str | None = None,
     ) -> Wb2State:
-        cmd: dict = {"cmd": "set"}
+        cmd_dict: dict = {"cmd": cmd or "set"}
         if r is not None:
-            cmd["r"] = r
+            cmd_dict["r"] = r
         if g is not None:
-            cmd["g"] = g
+            cmd_dict["g"] = g
         if b is not None:
-            cmd["b"] = b
+            cmd_dict["b"] = b
         if brightness is not None:
-            cmd["brightness"] = brightness
+            cmd_dict["brightness"] = brightness
         if on is not None:
             key = "on" if channel == 0 else f"on{channel}"
-            cmd[key] = int(on)
-        data = await self._request(json.dumps(cmd))
+            cmd_dict[key] = int(on)
+        data = await self._request(json.dumps(cmd_dict))
         return Wb2State.from_dict(data)
 
     async def close(self) -> None:
@@ -200,6 +206,9 @@ async def probe_device(
                 or "on" in data
                 or "motion" in data
                 or "presence" in data
+                or "event" in data
+                or "key" in data
+                or "push" in data
             )
         ):
             return None
