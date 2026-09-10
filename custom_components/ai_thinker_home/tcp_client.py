@@ -1,9 +1,9 @@
-"""Async TCP client for the WB2 JSON protocol."""
+"""Async TCP client for the WB2 JSON protocol (v2 — entity-based)."""
 
 from __future__ import annotations
 
 import asyncio
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import json
 import logging
 import socket
@@ -12,90 +12,93 @@ _LOGGER = logging.getLogger(__name__)
 
 
 @dataclass
-class Wb2State:
-    """Device state returned by the device."""
+class Wb2EntityDef:
+    """Entity definition from get_device."""
+    id: str
+    type: str
+    name: str = ""
+    icon: str = ""
+    action: str = ""
 
-    r: int = 0
-    g: int = 0
-    b: int = 0
-    brightness: int | None = None
-    on: int | None = None
-    on1: int | None = None
-    on2: int | None = None
-    motion: int | None = None
-    presence: int | None = None
-    push: int | None = None
-    count: int | None = None
-    mac: str | None = None
-    type: str | None = None
-    name: str | None = None
-    model: str | None = None
-    sw_version: str | None = None
-    names: list[str] | None = None
-    # Radar gate energy values (8 gates, 75cm each)
-    g0: int | None = None
-    g1: int | None = None
-    g2: int | None = None
-    g3: int | None = None
-    g4: int | None = None
-    g5: int | None = None
-    g6: int | None = None
-    g7: int | None = None
-    # Debug counters
-    scnt: int | None = None
-    mcnt: int | None = None
-    # Event device fields
-    event: str | None = None
-    key: str | None = None
+
+@dataclass
+class Wb2DeviceInfo:
+    """Full device description returned by get_device."""
+    mac: str = ""
+    name: str = ""
+    model: str = ""
+    sw_version: str = ""
+    entities: list[Wb2EntityDef] = field(default_factory=list)
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "Wb2DeviceInfo":
+        raw_entities = data.get("entities", [])
+        entities = []
+        for e in raw_entities:
+            if isinstance(e, dict) and "id" in e and "type" in e:
+                entities.append(Wb2EntityDef(
+                    id=e["id"],
+                    type=e["type"],
+                    name=e.get("name", ""),
+                    icon=e.get("icon", ""),
+                    action=e.get("action", ""),
+                ))
+        return cls(
+            mac=data.get("mac", ""),
+            name=data.get("name", ""),
+            model=data.get("model", ""),
+            sw_version=data.get("sw_version", ""),
+            entities=entities,
+        )
+
+
+@dataclass
+class Wb2EntityState:
+    """Single entity state from get_state or push."""
+    id: str
+    type: str
+    data: dict = field(default_factory=dict)
+
+    @classmethod
+    def from_dict(cls, d: dict) -> "Wb2EntityState":
+        return cls(
+            id=d.get("id", ""),
+            type=d.get("type", ""),
+            data={k: v for k, v in d.items() if k not in ("id", "type")},
+        )
+
+
+@dataclass
+class Wb2State:
+    """State response from get_state or push."""
+    state: str = "online"
+    entities: list[Wb2EntityState] = field(default_factory=list)
+
+    def find_entity(self, entity_id: str) -> Wb2EntityState | None:
+        for e in self.entities:
+            if e.id == entity_id:
+                return e
+        return None
 
     @classmethod
     def from_dict(cls, data: dict) -> "Wb2State":
-        names = data.get("names")
+        raw = data.get("entities", [])
+        entities = []
+        if isinstance(raw, list):
+            for e in raw:
+                if isinstance(e, dict):
+                    entities.append(Wb2EntityState.from_dict(e))
+        # Handle single-entity push format (e.g. 433_gateway, key_sensor)
+        if not entities and "id" in data and "type" in data:
+            entities.append(Wb2EntityState.from_dict(data))
         return cls(
-            r=int(data.get("r", 0)),
-            g=int(data.get("g", 0)),
-            b=int(data.get("b", 0)),
-            brightness=int(data["brightness"]) if "brightness" in data else None,
-            on=int(data["on"]) if "on" in data else None,
-            on1=int(data["on1"]) if "on1" in data else None,
-            on2=int(data["on2"]) if "on2" in data else None,
-            motion=int(data["motion"]) if "motion" in data else None,
-            presence=int(data["presence"]) if "presence" in data else None,
-            push=int(data["push"]) if "push" in data else None,
-            count=int(data["count"]) if "count" in data else None,
-            mac=data.get("mac"),
-            type=data.get("type"),
-            name=data.get("name"),
-            model=data.get("model"),
-            sw_version=data.get("sw_version"),
-            names=names if isinstance(names, list) else None,
-            g0=int(data["g0"]) if "g0" in data else None,
-            g1=int(data["g1"]) if "g1" in data else None,
-            g2=int(data["g2"]) if "g2" in data else None,
-            g3=int(data["g3"]) if "g3" in data else None,
-            g4=int(data["g4"]) if "g4" in data else None,
-            g5=int(data["g5"]) if "g5" in data else None,
-            g6=int(data["g6"]) if "g6" in data else None,
-            g7=int(data["g7"]) if "g7" in data else None,
-            scnt=int(data["scnt"]) if "scnt" in data else None,
-            mcnt=int(data["mcnt"]) if "mcnt" in data else None,
-            event=data.get("event"),
-            key=data.get("key"),
+            state=data.get("state", "online"),
+            entities=entities,
         )
-
-    def channel_state(self, channel: int) -> int | None:
-        """Return the on/off state (0/1) for a relay channel."""
-        if channel == 0:
-            return self.on
-        return getattr(self, f"on{channel}", None)
 
 
 class Wb2Client:
-    """Small async TCP client talking the WB2 JSON line protocol.
-
-    The device closes idle connections after a few seconds, so every request
-    opens a fresh connection instead of reusing a possibly-dead one.
-    """
+    """Async TCP client for the WB2 JSON line protocol (v2)."""
 
     def __init__(self, host: str, port: int, timeout: float = 3.0,
                  host_ip: str | None = None) -> None:
@@ -106,7 +109,6 @@ class Wb2Client:
         self._lock = asyncio.Lock()
 
     async def _open_connection(self):
-        """Open TCP connection with DNS fallback to cached IP."""
         try:
             return await asyncio.wait_for(
                 asyncio.open_connection(self.host, self.port), timeout=self.timeout
@@ -140,52 +142,47 @@ class Wb2Client:
                 except (ConnectionError, OSError):
                     pass
 
+    async def get_device(self) -> Wb2DeviceInfo:
+        """Discover device info and entity definitions."""
+        data = await self._request('{"cmd":"get_device"}')
+        return Wb2DeviceInfo.from_dict(data)
+
     async def get_state(self) -> Wb2State:
-        data = await self._request('{"cmd":"get"}')
+        """Poll entity states."""
+        data = await self._request('{"cmd":"get_state"}')
         return Wb2State.from_dict(data)
 
-    async def set_state(
-        self,
-        *,
-        r: int | None = None,
-        g: int | None = None,
-        b: int | None = None,
-        brightness: int | None = None,
-        on: bool | None = None,
-        channel: int = 0,
-        cmd: str | None = None,
-    ) -> Wb2State:
-        cmd_dict: dict = {"cmd": cmd or "set"}
-        if r is not None:
-            cmd_dict["r"] = r
-        if g is not None:
-            cmd_dict["g"] = g
-        if b is not None:
-            cmd_dict["b"] = b
-        if brightness is not None:
-            cmd_dict["brightness"] = brightness
-        if on is not None:
-            key = "on" if channel == 0 else f"on{channel}"
-            cmd_dict[key] = int(on)
+    async def set_state(self, *, entity_id: str, cmd: str = "set",
+                        params: dict | None = None) -> Wb2State:
+        """Send a command to the device."""
+        cmd_dict: dict = {"cmd": cmd, "id": entity_id}
+        if params:
+            cmd_dict.update(params)
+        data = await self._request(json.dumps(cmd_dict))
+        return Wb2State.from_dict(data)
+
+    async def send_cmd(self, cmd: str, entity_id: str = "") -> Wb2State:
+        """Send a simple command (pair, reset, calibrate, restore)."""
+        cmd_dict: dict = {"cmd": cmd}
+        if entity_id:
+            cmd_dict["id"] = entity_id
         data = await self._request(json.dumps(cmd_dict))
         return Wb2State.from_dict(data)
 
     async def close(self) -> None:
-        """No persistent connection to close; kept for API compatibility."""
+        pass
 
-    async def calibrate(self) -> dict:
-        """Calibrate radar with current environment (no person)."""
-        return await self._request('{"cmd":"calibrate"}')
+    async def calibrate(self) -> Wb2State:
+        return await self.send_cmd("calibrate")
 
-    async def restore_defaults(self) -> dict:
-        """Restore radar default parameters."""
-        return await self._request('{"cmd":"restore"}')
+    async def restore_defaults(self) -> Wb2State:
+        return await self.send_cmd("restore")
 
 
 async def probe_device(
     host: str, port: int, timeout: float = 0.3
-) -> Wb2State | None:
-    """Probe host for the WB2 JSON protocol, returning the device state."""
+) -> Wb2DeviceInfo | None:
+    """Probe host with get_device, returning device info + entity definitions."""
     try:
         reader, writer = await asyncio.wait_for(
             asyncio.open_connection(host, port), timeout=timeout
@@ -193,26 +190,15 @@ async def probe_device(
     except (OSError, asyncio.TimeoutError):
         return None
     try:
-        writer.write(b'{"cmd":"get"}\n')
+        writer.write(b'{"cmd":"get_device"}\n')
         await asyncio.wait_for(writer.drain(), timeout=timeout)
         line = await asyncio.wait_for(reader.readline(), timeout=timeout)
         if not line:
             return None
         data = json.loads(line.decode())
-        if not (
-            isinstance(data, dict)
-            and (
-                all(k in data for k in ("r", "g", "b"))
-                or "on" in data
-                or "motion" in data
-                or "presence" in data
-                or "event" in data
-                or "key" in data
-                or "push" in data
-            )
-        ):
+        if not isinstance(data, dict) or "mac" not in data:
             return None
-        return Wb2State.from_dict(data)
+        return Wb2DeviceInfo.from_dict(data)
     except (OSError, asyncio.TimeoutError, json.JSONDecodeError, UnicodeDecodeError):
         return None
     finally:

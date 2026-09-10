@@ -29,8 +29,6 @@ MDNS_SERVICE_TYPE = "_aitinker._tcp"
 # Radar debug switches (must match firmware app_config.h)
 RADAR_GATE_DATA_ENABLE = False  # 门数据开关
 
-PLATFORMS = ["light"]
-
 
 def short_mac(mac: str | None) -> str:
     """Return the last 6 hex digits of a MAC address, uppercased."""

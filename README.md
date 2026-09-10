@@ -4,11 +4,14 @@
 
 Ai-Thinker WB2 系列设备使用 **TCP Socket + JSON 行协议** 进行通信。设备作为 TCP 服务器，Home Assistant 集成作为客户端连接设备并发送命令。
 
+**协议版本**: v2（实体驱动架构）
+
 **协议特点**:
 - 传输层：TCP
 - 数据格式：JSON（每行一条消息，以 `\n` 分隔）
 - 连接模式：短连接（每次请求建立新连接，设备会在空闲几秒后自动断开）
 - 默认端口：9100
+- 实体定义：设备上报（`get_device` 命令返回实体列表）
 
 ---
 
@@ -19,7 +22,7 @@ Ai-Thinker WB2 系列设备使用 **TCP Socket + JSON 行协议** 进行通信�
 | 端口 | 9100 | 设备 TCP 监听端口 |
 | 超时 | 3.0 秒 | 正常请求超时 |
 | 扫描超时 | 0.3 秒 | 设备发现时的超时时间 |
-| 轮询间隔 | 1 秒 | Home Assistant 状态更新频率 |
+| 轮询间隔 | 10 秒 | Home Assistant 状态更新频率 |
 
 ---
 
@@ -27,128 +30,176 @@ Ai-Thinker WB2 系列设备使用 **TCP Socket + JSON 行协议** 进行通信�
 
 所有请求均为单行 JSON 对象，以 `\n` 结尾。
 
-### 获取设备状态
+### 获取设备信息和实体定义
 
 ```json
-{"cmd":"get"}\n
+{"cmd":"get_device"}\n
 ```
 
-**返回**: 设备的完整状态信息。
+**返回**: 设备基本信息和所有实体定义（`Wb2DeviceInfo`）。
 
-### 设置设备状态
-
-**设置 RGB 颜色** (适用于 RGB 灯设备):
+### 获取实体状态
 
 ```json
-{"cmd":"set","r":255,"g":0,"b":128}\n
+{"cmd":"get_state"}\n
 ```
 
-**设置亮度** (适用于 RGB 灯设备):
+**返回**: 所有实体的当前状态（`Wb2State`，包含 `entities[]`）。
+
+### 设置实体状态
 
 ```json
-{"cmd":"set","brightness":128}\n
+{"cmd":"set","id":"light_01","r":255,"g":0,"b":128}\n
+{"cmd":"set","id":"switch_01","on":1}\n
+{"cmd":"set","id":"light_01","brightness":128}\n
 ```
 
-**控制继电器开关** (适用于开关设备):
+### 发送通用命令
 
 ```json
-{"cmd":"set","on":1,"channel":0}\n
-{"cmd":"set","on":0,"channel":1}\n
-```
-
-**混合控制**:
-
-```json
-{"cmd":"set","r":255,"g":255,"b":255,"on":1,"channel":0}\n
+{"cmd":"pair"}\n
+{"cmd":"reset"}\n
+{"cmd":"calibrate"}\n
+{"cmd":"restore"}\n
 ```
 
 ### 请求字段说明
 
 | 字段 | 类型 | 必需 | 说明 |
 |------|------|------|------|
-| `cmd` | string | 是 | 命令类型：`"get"` 或 `"set"` |
+| `cmd` | string | 是 | 命令类型：`get_device`、`get_state`、`set`、`pair`、`reset`、`calibrate`、`restore` |
+| `id` | string | 否 | 目标实体 ID（`set` 命令必需） |
 | `r` | int | 否 | 红色通道值 (0-255) |
 | `g` | int | 否 | 绿色通道值 (0-255) |
 | `b` | int | 否 | 蓝色通道值 (0-255) |
 | `brightness` | int | 否 | 亮度值 (0-255) |
-| `on` | int | 否 | 通道 0 开关状态 (0=关闭, 1=打开) |
-| `on1` | int | 否 | 通道 1 开关状态 (0=关闭, 1=打开) |
-| `on2` | int | 否 | 通道 2 开关状态 (0=关闭, 1=打开) |
-| `channel` | int | 否 | 指定要控制的通道号 (默认 0) |
+| `on` | int | 否 | 开关状态 (0=关闭, 1=打开) |
 
 ---
 
 ## 响应格式
 
-响应为单行 JSON 对象，包含设备的当前状态。
-
-### 完整响应示例
+### get_device 响应
 
 ```json
-{"r":255,"g":128,"b":64,"brightness":200,"on":1,"on1":0,"on2":1,"motion":0,"count":3,"mac":"AA:BB:CC:DD:EE:FF","type":"light","name":"客厅灯","model":"Ai-Thinker","names":["主灯","氛围灯","射灯"]}
+{
+  "mac": "AA:BB:CC:DD:EE:FF",
+  "name": "客厅灯",
+  "model": "Ai-Thinker",
+  "sw_version": "1.0.0",
+  "entities": [
+    {"id": "light_01", "type": "light", "name": "主灯", "icon": "mdi:white-balance-sunny"},
+    {"id": "switch_01", "type": "switch", "name": "开关1", "icon": "mdi:power"},
+    {"id": "switch_02", "type": "switch", "name": "开关2", "icon": "mdi:power"},
+    {"id": "radar_01", "type": "binary_sensor", "name": "存在检测", "icon": "mdi:motion-sensor"},
+    {"id": "event_01", "type": "event", "name": "遥控器", "icon": "mdi:remote"},
+    {"id": "key_01", "type": "sensor", "name": "键值", "icon": "mdi:remote"}
+  ]
+}
+```
+
+### get_state 响应
+
+```json
+{
+  "state": "online",
+  "entities": [
+    {"id": "light_01", "type": "light", "r": 255, "g": 128, "b": 64, "brightness": 200},
+    {"id": "switch_01", "type": "switch", "on": 1},
+    {"id": "switch_02", "type": "switch", "on": 0},
+    {"id": "radar_01", "type": "binary_sensor", "motion": 1, "presence": 1},
+    {"id": "key_01", "type": "sensor", "value": "ABCD1234"}
+  ]
+}
 ```
 
 ### 响应字段说明
 
+#### Wb2DeviceInfo（设备信息）
+
 | 字段 | 类型 | 说明 |
 |------|------|------|
-| `r` | int | 红色通道当前值 (0-255)，默认 0 |
-| `g` | int | 绿色通道当前值 (0-255)，默认 0 |
-| `b` | int | 蓝色通道当前值 (0-255)，默认 0 |
-| `brightness` | int/None | 亮度当前值 (0-255) |
-| `on` | int/None | 通道 0 开关状态 (0 或 1) |
-| `on1` | int/None | 通道 1 开关状态 (0 或 1) |
-| `on2` | int/None | 通道 2 开关状态 (0 或 1) |
-| `motion` | int/None | 运动检测标志 (0=无运动, 1=检测到运动) |
-| `count` | int/None | 继电器通道数量 |
-| `mac` | string/None | 设备 MAC 地址 |
-| `type` | string/None | 设备类型 (见下方设备类型) |
-| `name` | string/None | 设备显示名称 |
-| `model` | string/None | 设备型号 |
-| `names` | list/None | 各通道名称列表 |
+| `mac` | string | 设备 MAC 地址 |
+| `name` | string | 设备显示名称 |
+| `model` | string | 设备型号 |
+| `sw_version` | string | 固件版本 |
+| `entities` | list | 实体定义列表 |
 
-### 设备验证逻辑
+#### Wb2EntityDef（实体定义）
 
-设备响应必须满足以下条件之一才会被识别为有效的 WB2 设备：
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `id` | string | 实体唯一标识符 |
+| `type` | string | 实体类型（见下方类型表） |
+| `name` | string | 实体显示名称 |
+| `icon` | string | 图标 (MDI 图标名) |
 
-1. 同时包含 `r`、`g`、`b` 三个字段 (RGB 灯)
-2. 包含 `on` 字段 (继电器开关)
-3. 包含 `motion` 字段 (雷达传感器)
+#### Wb2State（状态响应）
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `state` | string | 设备状态（`online`/`offline`） |
+| `entities` | list | 实体状态列表 |
+
+#### Wb2EntityState（实体状态）
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `id` | string | 实体 ID |
+| `type` | string | 实体类型 |
+| `data` | dict | 实体数据（类型相关） |
 
 ---
 
-## 设备类型
+## 实体类型
 
-| 类型代码 | 常量名 | Home Assistant 平台 | 说明 |
-|----------|--------|---------------------|------|
-| `light` | `DEVICE_TYPE_LIGHT` | `light` | RGB LED 灯，支持颜色控制 |
-| `switch` | `DEVICE_TYPE_SWITCH` | `switch` | 多通道继电器开关，支持独立控制 |
-| `radar` | `DEVICE_TYPE_RADAR` | `binary_sensor` | 雷达存在/运动检测传感器 |
+| 类型 | 说明 | 数据字段 |
+|------|------|----------|
+| `light` | RGB LED 灯 | `r`, `g`, `b`, `brightness` |
+| `switch` | 继电器开关 | `on` (0/1) |
+| `binary_sensor` | 二进制传感器 | `motion`, `presence` (0/1) |
+| `sensor` | 数据传感器 | `value` (字符串) |
+| `event` | 事件实体 | `event_type`, `event_id` |
 
-### light (RGB 灯)
+### light（RGB 灯）
 
 支持功能：
 - 颜色控制 (RGB)
 - 亮度调节
 - 开关控制
 
-支持字段：`r`, `g`, `b`, `brightness`, `on`
+数据字段：`r`, `g`, `b`, `brightness`
 
-### switch (继电器开关)
+### switch（继电器开关）
 
 支持功能：
-- 多通道独立开关控制
-- 支持最多 3 个通道 (on, on1, on2)
+- 开关控制
 
-支持字段：`on`, `on1`, `on2`, `count`, `names`
+数据字段：`on` (0=关闭, 1=打开)
 
-### radar (雷达传感器)
+### binary_sensor（二进制传感器）
 
 支持功能：
 - 存在检测
 - 运动检测
 
-支持字段：`motion`
+数据字段：`motion`, `presence` (0=无, 1=有)
+
+### sensor（数据传感器）
+
+支持功能：
+- 键值上报
+- 其他数值型数据
+
+数据字段：`value` (字符串)
+
+### event（事件实体）
+
+支持功能：
+- 按键按下/释放事件
+- 遥控器事件
+
+事件类型：`press`, `release`
 
 ---
 
@@ -173,7 +224,7 @@ Home Assistant 集成支持两种设备发现方式：
 2. **扫描端口**: 9100
 3. **扫描方式**: 并发扫描（最多 64 个并发连接）
 4. **扫描超时**: 每个设备 0.3 秒
-5. **验证方法**: 发送 `{"cmd":"get"}` 命令，检查响应是否包含有效设备标识
+5. **验证方法**: 发送 `{"cmd":"get_device"}` 命令，检查响应是否包含有效设备信息
 
 如果自动发现失败，用户可以手动输入设备 IP 地址。
 
@@ -185,12 +236,14 @@ Home Assistant 集成支持两种设备发现方式：
 # 连接参数
 DEFAULT_PORT = 9100
 SCAN_TIMEOUT = 0.3  # 设备扫描超时（秒）
-POLL_INTERVAL = 1   # 状态轮询间隔（秒）
+POLL_INTERVAL = 10  # 状态轮询间隔（秒）
 
 # 设备类型
 DEVICE_TYPE_LIGHT = "light"
 DEVICE_TYPE_SWITCH = "switch"
 DEVICE_TYPE_RADAR = "radar"
+DEVICE_TYPE_EVENT = "event"
+DEVICE_TYPE_KEY_SENSOR = "key_sensor"
 
 # 默认值
 DEFAULT_NAME = "Light"
@@ -213,56 +266,97 @@ CONF_TYPE = "type"
 
 ## 数据结构定义 (Python)
 
+### Wb2DeviceInfo
+
+```python
+from dataclasses import dataclass, field
+
+@dataclass
+class Wb2EntityDef:
+    """实体定义"""
+    id: str
+    type: str
+    name: str = ""
+    icon: str = ""
+    action: str = ""
+
+@dataclass
+class Wb2DeviceInfo:
+    """设备信息"""
+    mac: str = ""
+    name: str = ""
+    model: str = ""
+    sw_version: str = ""
+    entities: list[Wb2EntityDef] = field(default_factory=list)
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "Wb2DeviceInfo":
+        raw_entities = data.get("entities", [])
+        entities = []
+        for e in raw_entities:
+            if isinstance(e, dict) and "id" in e and "type" in e:
+                entities.append(Wb2EntityDef(
+                    id=e["id"],
+                    type=e["type"],
+                    name=e.get("name", ""),
+                    icon=e.get("icon", ""),
+                    action=e.get("action", ""),
+                ))
+        return cls(
+            mac=data.get("mac", ""),
+            name=data.get("name", ""),
+            model=data.get("model", ""),
+            sw_version=data.get("sw_version", ""),
+            entities=entities,
+        )
+```
+
+### Wb2EntityState
+
+```python
+@dataclass
+class Wb2EntityState:
+    """单个实体状态"""
+    id: str
+    type: str
+    data: dict = field(default_factory=dict)
+
+    @classmethod
+    def from_dict(cls, d: dict) -> "Wb2EntityState":
+        return cls(
+            id=d.get("id", ""),
+            type=d.get("type", ""),
+            data={k: v for k, v in d.items() if k not in ("id", "type")},
+        )
+```
+
 ### Wb2State
 
 ```python
-from dataclasses import dataclass
-from typing import Optional, List
-
 @dataclass
 class Wb2State:
-    """设备状态数据结构"""
-    r: int = 0
-    g: int = 0
-    b: int = 0
-    brightness: Optional[int] = None
-    on: Optional[int] = None
-    on1: Optional[int] = None
-    on2: Optional[int] = None
-    motion: Optional[int] = None
-    count: Optional[int] = None
-    mac: Optional[str] = None
-    type: Optional[str] = None
-    name: Optional[str] = None
-    model: Optional[str] = None
-    names: Optional[List[str]] = None
+    """状态响应"""
+    state: str = "online"
+    entities: list[Wb2EntityState] = field(default_factory=list)
+
+    def find_entity(self, entity_id: str) -> Wb2EntityState | None:
+        for e in self.entities:
+            if e.id == entity_id:
+                return e
+        return None
 
     @classmethod
     def from_dict(cls, data: dict) -> "Wb2State":
-        """从字典创建 Wb2State 实例"""
-        names = data.get("names")
+        raw = data.get("entities", [])
+        entities = []
+        if isinstance(raw, list):
+            for e in raw:
+                if isinstance(e, dict):
+                    entities.append(Wb2EntityState.from_dict(e))
         return cls(
-            r=int(data.get("r", 0)),
-            g=int(data.get("g", 0)),
-            b=int(data.get("b", 0)),
-            brightness=int(data["brightness"]) if "brightness" in data else None,
-            on=int(data["on"]) if "on" in data else None,
-            on1=int(data["on1"]) if "on1" in data else None,
-            on2=int(data["on2"]) if "on2" in data else None,
-            motion=int(data["motion"]) if "motion" in data else None,
-            count=int(data["count"]) if "count" in data else None,
-            mac=data.get("mac"),
-            type=data.get("type"),
-            name=data.get("name"),
-            model=data.get("model"),
-            names=names if isinstance(names, list) else None,
+            state=data.get("state", "online"),
+            entities=entities,
         )
-
-    def channel_state(self, channel: int) -> Optional[int]:
-        """获取指定通道的开关状态"""
-        if channel == 0:
-            return self.on
-        return getattr(self, f"on{channel}", None)
 ```
 
 ---
@@ -275,30 +369,40 @@ class Wb2State:
 import asyncio
 import json
 
-async def get_device_state(host: str, port: int = 9100):
-    """获取设备状态"""
+async def get_device_info(host: str, port: int = 9100):
+    """获取设备信息和实体定义"""
     reader, writer = await asyncio.open_connection(host, port)
     try:
-        # 发送 get 命令
-        writer.write(b'{"cmd":"get"}\n')
+        writer.write(b'{"cmd":"get_device"}\n')
         await writer.drain()
         
-        # 读取响应
         line = await asyncio.wait_for(reader.readline(), timeout=3.0)
         if line:
-            data = json.loads(line.decode())
-            return data
+            return json.loads(line.decode())
     finally:
         writer.close()
         await writer.wait_closed()
 
-async def set_rgb_color(host: str, r: int, g: int, b: int, brightness: int | None = None, port: int = 9100):
-    """设置 RGB 颜色"""
+async def get_entity_states(host: str, port: int = 9100):
+    """获取所有实体状态"""
     reader, writer = await asyncio.open_connection(host, port)
     try:
-        cmd = {"cmd": "set", "r": r, "g": g, "b": b}
-        if brightness is not None:
-            cmd["brightness"] = brightness
+        writer.write(b'{"cmd":"get_state"}\n')
+        await writer.drain()
+        
+        line = await asyncio.wait_for(reader.readline(), timeout=3.0)
+        if line:
+            return json.loads(line.decode())
+    finally:
+        writer.close()
+        await writer.wait_closed()
+
+async def set_entity_state(host: str, entity_id: str, params: dict, port: int = 9100):
+    """设置实体状态"""
+    reader, writer = await asyncio.open_connection(host, port)
+    try:
+        cmd = {"cmd": "set", "id": entity_id}
+        cmd.update(params)
         writer.write((json.dumps(cmd) + "\n").encode())
         await writer.drain()
         
@@ -309,12 +413,12 @@ async def set_rgb_color(host: str, r: int, g: int, b: int, brightness: int | Non
         writer.close()
         await writer.wait_closed()
 
-async def set_relay(host: str, channel: int, on: bool, port: int = 9100):
-    """控制继电器开关"""
+async def send_command(host: str, cmd: str, port: int = 9100):
+    """发送通用命令"""
     reader, writer = await asyncio.open_connection(host, port)
     try:
-        cmd = {"cmd": "set", "on": int(on), "channel": channel}
-        writer.write((json.dumps(cmd) + "\n").encode())
+        payload = json.dumps({"cmd": cmd})
+        writer.write((payload + "\n").encode())
         await writer.drain()
         
         line = await asyncio.wait_for(reader.readline(), timeout=3.0)
@@ -328,17 +432,27 @@ async def set_relay(host: str, channel: int, on: bool, port: int = 9100):
 async def main():
     host = "192.168.1.100"
     
-    # 获取状态
-    state = await get_device_state(host)
-    print(f"设备状态: {state}")
+    # 获取设备信息
+    device_info = await get_device_info(host)
+    print(f"设备: {device_info['model']} {device_info['name']}")
+    print(f"实体数量: {len(device_info['entities'])}")
     
-    # 设置 RGB 颜色为白色
-    result = await set_rgb_color(host, 255, 255, 255)
+    # 获取状态
+    states = await get_entity_states(host)
+    for entity in states["entities"]:
+        print(f"  {entity['id']}: {entity.get('data', {})}")
+    
+    # 设置灯颜色
+    result = await set_entity_state(host, "light_01", {"r": 255, "g": 0, "b": 128})
     print(f"设置结果: {result}")
     
-    # 打开继电器通道 0
-    result = await set_relay(host, 0, True)
+    # 打开开关
+    result = await set_entity_state(host, "switch_01", {"on": 1})
     print(f"开关结果: {result}")
+    
+    # 校准雷达
+    result = await send_command(host, "calibrate")
+    print(f"校准结果: {result}")
 
 if __name__ == "__main__":
     asyncio.run(main())
@@ -347,17 +461,26 @@ if __name__ == "__main__":
 ### curl 测试命令
 
 ```bash
-# 获取设备状态
-echo '{"cmd":"get"}' | nc 192.168.1.100 9100
+# 获取设备信息
+echo '{"cmd":"get_device"}' | nc 192.168.1.100 9100
 
-# 设置 RGB 颜色
-echo '{"cmd":"set","r":255,"g":0,"b":128}' | nc 192.168.1.100 9100
+# 获取实体状态
+echo '{"cmd":"get_state"}' | nc 192.168.1.100 9100
+
+# 设置灯颜色
+echo '{"cmd":"set","id":"light_01","r":255,"g":0,"b":128}' | nc 192.168.1.100 9100
 
 # 设置亮度
-echo '{"cmd":"set","brightness":128}' | nc 192.168.1.100 9100
+echo '{"cmd":"set","id":"light_01","brightness":128}' | nc 192.168.1.100 9100
 
-# 控制继电器
-echo '{"cmd":"set","on":1,"channel":0}' | nc 192.168.1.100 9100
+# 打开开关
+echo '{"cmd":"set","id":"switch_01","on":1}' | nc 192.168.1.100 9100
+
+# 433 配对
+echo '{"cmd":"pair"}' | nc 192.168.1.100 9100
+
+# 校准雷达
+echo '{"cmd":"calibrate"}' | nc 192.168.1.100 9100
 ```
 
 ---
@@ -383,6 +506,7 @@ echo '{"cmd":"set","on":1,"channel":0}' | nc 192.168.1.100 9100
 | 设备无法连接 | 检查 IP 地址、网络连接、防火墙设置 |
 | 状态不同步 | 重启 Home Assistant，检查网络稳定性 |
 | 扫描不到设备 | 确保在同一局域网，尝试手动添加 |
+| 推送更新失败 | 检查 9101 端口是否被占用 |
 
 ## 相关链接
 

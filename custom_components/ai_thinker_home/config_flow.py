@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 from ipaddress import IPv4Address, ip_address, ip_network
+import json
 import logging
 from typing import Any
 
@@ -36,7 +37,7 @@ from .const import (
     SCAN_TIMEOUT,
     short_mac,
 )
-from .tcp_client import Wb2State, probe_device
+from .tcp_client import Wb2DeviceInfo, probe_device
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -83,8 +84,8 @@ class Wb2ConfigFlow(ConfigFlow, domain=DOMAIN):
 
     def __init__(self) -> None:
         """Initialize the flow."""
-        self._scan_task: asyncio.Task[dict[str, Wb2State]] | None = None
-        self._scan_found: dict[str, Wb2State] | None = None
+        self._scan_task: asyncio.Task[dict[str, Wb2DeviceInfo]] | None = None
+        self._scan_found: dict[str, Wb2DeviceInfo] | None = None
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
@@ -107,21 +108,21 @@ class Wb2ConfigFlow(ConfigFlow, domain=DOMAIN):
             progress_task=self._scan_task,
         )
 
-    async def _scan(self, hosts: list[str]) -> dict[str, Wb2State]:
-        """Probe candidate hosts concurrently, return {host: Wb2State}."""
+    async def _scan(self, hosts: list[str]) -> dict[str, Wb2DeviceInfo]:
+        """Probe candidate hosts concurrently, return {host: Wb2DeviceInfo}."""
         semaphore = asyncio.Semaphore(64)
 
-        async def probe(host: str) -> tuple[str, Wb2State] | None:
+        async def probe(host: str) -> tuple[str, Wb2DeviceInfo] | None:
             async with semaphore:
-                state = await probe_device(host, DEFAULT_PORT, timeout=SCAN_TIMEOUT)
-                if state is not None:
-                    return host, state
+                info = await probe_device(host, DEFAULT_PORT, timeout=SCAN_TIMEOUT)
+                if info is not None:
+                    return host, info
             return None
 
         results = await asyncio.gather(*(probe(h) for h in hosts))
         return {
-            host: state
-            for host, state in (item for item in results if item is not None)
+            host: info
+            for host, info in (item for item in results if item is not None)
         }
 
     async def async_step_scan_progress(
@@ -191,9 +192,9 @@ class Wb2ConfigFlow(ConfigFlow, domain=DOMAIN):
             options: list[SelectOptionDict] = [
                 SelectOptionDict(
                     value=host,
-                    label=f"{host} ({short_mac(state.mac) or host})",
+                    label=f"{info.name} ({short_mac(info.mac) or host})",
                 )
-                for host, state in sorted((self._scan_found or {}).items())
+                for host, info in sorted((self._scan_found or {}).items())
                 if host not in existing_hosts
             ]
             options.append(
@@ -212,8 +213,8 @@ class Wb2ConfigFlow(ConfigFlow, domain=DOMAIN):
         host = user_input[CONF_HOST]
         if host == MANUAL_OPTION:
             return await self.async_step_manual()
-        state = (self._scan_found or {}).get(host)
-        return await self._create_entry(host, DEFAULT_PORT, state)
+        info = (self._scan_found or {}).get(host)
+        return await self._create_entry(host, DEFAULT_PORT, info)
 
     async def async_step_manual(
         self, user_input: dict[str, Any] | None = None
@@ -230,9 +231,9 @@ class Wb2ConfigFlow(ConfigFlow, domain=DOMAIN):
             except ValueError:
                 errors[CONF_HOST] = "invalid_ip"
             else:
-                state = await probe_device(host, port, timeout=1.0)
-                if state is not None:
-                    return await self._create_entry(host, port, state)
+                info = await probe_device(host, port, timeout=1.0)
+                if info is not None:
+                    return await self._create_entry(host, port, info)
                 errors["base"] = "cannot_connect"
             return self.async_show_form(
                 step_id="manual",
@@ -277,11 +278,11 @@ class Wb2ConfigFlow(ConfigFlow, domain=DOMAIN):
             "instance": instance,
         }
 
-        state = await probe_device(host_ip, port, timeout=1.0)
-        if state and state.model and state.name:
-            display_name = f"{state.model} {state.name}"
-        elif state and state.model:
-            display_name = state.model
+        info = await probe_device(host_ip, port, timeout=1.0)
+        if info and info.model and info.name:
+            display_name = f"{info.model} {info.name}"
+        elif info and info.model:
+            display_name = info.model
         else:
             display_name = instance
 
@@ -295,16 +296,16 @@ class Wb2ConfigFlow(ConfigFlow, domain=DOMAIN):
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
         """Confirm zeroconf discovery."""
-        info = self._discovery_info
+        info_data = self._discovery_info
+        if info_data is None:
+            return self.async_abort(reason="cannot_connect")
+
+        info = await probe_device(info_data["host_ip"], info_data["port"], timeout=1.0)
         if info is None:
             return self.async_abort(reason="cannot_connect")
 
-        state = await probe_device(info["host_ip"], info["port"], timeout=1.0)
-        if state is None:
-            return self.async_abort(reason="cannot_connect")
-
         return await self._create_entry(
-            info["host"], info["port"], state, host_ip=info["host_ip"]
+            info_data["host"], info_data["port"], info, host_ip=info_data["host_ip"]
         )
 
     @staticmethod
@@ -319,7 +320,7 @@ class Wb2ConfigFlow(ConfigFlow, domain=DOMAIN):
         )
 
     async def _create_entry(
-        self, host: str, port: int, state: Wb2State | None = None,
+        self, host: str, port: int, info: Wb2DeviceInfo | None = None,
         host_ip: str | None = None,
     ) -> ConfigFlowResult:
         for existing in self._async_current_entries():
@@ -328,12 +329,11 @@ class Wb2ConfigFlow(ConfigFlow, domain=DOMAIN):
                 and existing.data.get(CONF_PORT) == port
             ):
                 return self.async_abort(reason="already_configured")
-        mac = state.mac if state else None
+        mac = info.mac if info else None
         short = short_mac(mac)
-        dtype = state.type if state else DEFAULT_TYPE
-        model = state.model if state else None
-        default_name = "Switch" if dtype == DEVICE_TYPE_SWITCH else DEFAULT_NAME
-        dev_name = state.name if state and state.name else None
+        model = info.model if info else None
+        dev_name = info.name if info and info.name else None
+        default_name = DEFAULT_NAME
         if model and dev_name:
             title = f"{model} {dev_name}"
         elif model and short:
@@ -345,10 +345,11 @@ class Wb2ConfigFlow(ConfigFlow, domain=DOMAIN):
         data = {
             CONF_HOST: host,
             CONF_PORT: port,
-            CONF_DEVICE_NAME: state.name if state and state.name else default_name,
+            CONF_DEVICE_NAME: dev_name or default_name,
             CONF_MAC: mac,
-            CONF_TYPE: dtype,
+            CONF_TYPE: DEFAULT_TYPE,
         }
         if host_ip:
             data["host_ip"] = host_ip
-        return self.async_create_entry(title=title, data=data)
+        entry = self.async_create_entry(title=title, data=data)
+        return entry

@@ -1,4 +1,4 @@
-"""Support for the Ai-Thinker WB2 RGB LED light."""
+"""Light entity for Ai-Thinker WB2 devices (data-driven by entity id)."""
 
 from __future__ import annotations
 
@@ -11,26 +11,10 @@ from homeassistant.components.light import (
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.helpers.entity_registry import async_get as async_get_entity_registry
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import (
-    CONF_DEVICE_NAME,
-    CONF_HOST,
-    CONF_MAC,
-    CONF_PORT,
-    CONF_TYPE,
-    DEFAULT_MODEL,
-    DEFAULT_NAME,
-    DEFAULT_TYPE,
-    DEVICE_TYPE_LIGHT,
-    DOMAIN,
-    model_to_prefix,
-    short_mac,
-)
+from .const import DOMAIN
 from .coordinator import Wb2Coordinator
-
-_LEVEL_MAX = 255
 
 
 async def async_setup_entry(
@@ -38,118 +22,72 @@ async def async_setup_entry(
     entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Set up the WB2 RGB light from a config entry."""
-    dtype: str = entry.data.get(CONF_TYPE, DEFAULT_TYPE)
-    if dtype != DEVICE_TYPE_LIGHT:
-        return
     coordinator: Wb2Coordinator = hass.data[DOMAIN][entry.entry_id]
-    host: str = entry.data[CONF_HOST]
-    port: int = entry.data[CONF_PORT]
-    base_name: str = entry.data.get(CONF_DEVICE_NAME, DEFAULT_NAME)
-    mac: str | None = entry.data.get(CONF_MAC)
-
-    device_name = coordinator.data.name if coordinator.data and coordinator.data.name else base_name
-    model = coordinator.data.model if coordinator.data and coordinator.data.model else DEFAULT_MODEL
-    sw_version = coordinator.data.sw_version if coordinator.data else None
-    seq = _next_sequence(hass, mac, dtype, model)
-    async_add_entities(
-        [Wb2Light(coordinator, device_name, model, sw_version, host, port, mac, dtype, seq)]
-    )
-
-
-def _next_sequence(hass: HomeAssistant, mac: str | None, dtype: str, model: str | None = None) -> int:
-    """Return the next entity sequence number for (mac, light)."""
-    if not mac:
-        return 1
-    prefix = f"light.{model_to_prefix(model, dtype)}_{short_mac(mac).lower()}_light_"
-    seq = 1
-    for entity in async_get_entity_registry(hass).entities.values():
-        eid = entity.entity_id or ""
-        suffix = eid[len(prefix) :]
-        if eid.startswith(prefix) and suffix.isdigit():
-            seq = max(seq, int(suffix) + 1)
-    return seq
+    entities = []
+    for edef in coordinator.device_info.entities:
+        if edef.type == "light":
+            entities.append(Wb2Light(coordinator, edef))
+    async_add_entities(entities)
 
 
 class Wb2Light(CoordinatorEntity[Wb2Coordinator], LightEntity):
-    """The WB2 RGB LED exposed as a Home Assistant light."""
+    """Light entity driven by device-reported entity definition."""
 
     _attr_has_entity_name = True
     _attr_color_mode = ColorMode.RGB
     _attr_supported_color_modes = {ColorMode.RGB}
-    _attr_brightness_step = 1
 
-    def __init__(
-        self,
-        coordinator: Wb2Coordinator,
-        base_name: str,
-        model: str,
-        sw_version: str | None,
-        host: str,
-        port: int,
-        mac: str | None,
-        dtype: str,
-        seq: int,
-    ) -> None:
+    def __init__(self, coordinator: Wb2Coordinator, edef) -> None:
         super().__init__(coordinator)
-        short = short_mac(mac)
-        prefix = model_to_prefix(model, dtype)
-        if short:
-            self.entity_id = f"light.{prefix}_{short.lower()}_light_{seq:03d}"
-            self._attr_unique_id = f"{DOMAIN}_{mac}_light"
-            identifiers = {(DOMAIN, mac)}
-        else:
-            self._attr_unique_id = f"{DOMAIN}_{host}_{port}_light"
-            identifiers = {(DOMAIN, f"{host}:{port}")}
-
-        self._attr_device_info = {
-            "identifiers": identifiers,
-            "name": base_name,
-            "manufacturer": "Ai-Thinker",
-            "model": model,
-            "sw_version": sw_version,
-        }
+        self._entity_id = edef.id
+        self._attr_unique_id = f"{DOMAIN}_{edef.id}"
+        self._attr_name = edef.name
+        self._attr_icon = edef.icon
+        self._attr_device_info = _device_info(coordinator)
         self._last_color: tuple[int, int, int] = (255, 255, 255)
-        self._last_brightness: int = _LEVEL_MAX
+        self._last_brightness: int = 255
 
-    def _handle_coordinator_update(self) -> None:
+    def _get_entity_data(self) -> dict:
         state = self.coordinator.data
-        if state is not None:
-            if state.r or state.g or state.b:
-                self._last_color = (state.r, state.g, state.b)
-            if state.brightness is not None:
-                self._last_brightness = state.brightness
-        super()._handle_coordinator_update()
+        if state is None:
+            return {}
+        entity_state = state.find_entity(self._entity_id)
+        if entity_state is None:
+            return {}
+        return entity_state.data
 
     @property
     def is_on(self) -> bool | None:
-        state = self.coordinator.data
-        if state is None:
+        data = self._get_entity_data()
+        if not data:
             return None
-        return state.r > 0 or state.g > 0 or state.b > 0
+        r = data.get("r", 0)
+        g = data.get("g", 0)
+        b = data.get("b", 0)
+        return r > 0 or g > 0 or b > 0
 
     @property
     def rgb_color(self) -> tuple[int, int, int]:
-        state = self.coordinator.data
-        if state is None:
+        data = self._get_entity_data()
+        if not data:
             return (0, 0, 0)
-        return (state.r, state.g, state.b)
+        return (data.get("r", 0), data.get("g", 0), data.get("b", 0))
 
     @property
     def brightness(self) -> int | None:
-        state = self.coordinator.data
-        if state is None:
+        data = self._get_entity_data()
+        if not data:
             return None
-        if state.brightness is not None:
-            return state.brightness
-        return max(state.r, state.g, state.b)
+        b = data.get("brightness")
+        if b is not None:
+            return b
+        return max(data.get("r", 0), data.get("g", 0), data.get("b", 0))
 
     @property
     def available(self) -> bool:
         return self.coordinator.last_update_success and super().available
 
     async def async_turn_on(self, **kwargs) -> None:
-        """Turn the light on with optional color/brightness."""
         r = g = b = None
         brightness = None
 
@@ -166,10 +104,27 @@ class Wb2Light(CoordinatorEntity[Wb2Coordinator], LightEntity):
         self._last_color = (r, g, b)
         self._last_brightness = brightness
 
-        await self.coordinator.client.set_state(r=r, g=g, b=b, brightness=brightness)
-        await self.coordinator.async_request_refresh()
+        params = {"r": r, "g": g, "b": b, "brightness": brightness}
+        state = await self.coordinator.client.set_state(
+            entity_id=self._entity_id, params=params
+        )
+        self.coordinator.async_set_updated_data(state)
 
     async def async_turn_off(self, **kwargs) -> None:
-        """Turn the light off."""
-        await self.coordinator.client.set_state(r=0, g=0, b=0)
-        await self.coordinator.async_request_refresh()
+        params = {"r": 0, "g": 0, "b": 0}
+        state = await self.coordinator.client.set_state(
+            entity_id=self._entity_id, params=params
+        )
+        self.coordinator.async_set_updated_data(state)
+
+
+def _device_info(coordinator: Wb2Coordinator) -> dict:
+    info = coordinator.device_info
+    mac = info.mac
+    return {
+        "identifiers": {(DOMAIN, mac)} if mac else {(DOMAIN, info.name)},
+        "name": info.name,
+        "manufacturer": "Ai-Thinker",
+        "model": info.model,
+        "sw_version": info.sw_version,
+    }

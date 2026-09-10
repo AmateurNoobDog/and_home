@@ -1,4 +1,4 @@
-"""Support for the Ai-Thinker WB2 multi-channel relay switch."""
+"""Switch entities for Ai-Thinker WB2 devices (data-driven by entity id)."""
 
 from __future__ import annotations
 
@@ -8,20 +8,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import (
-    CONF_DEVICE_NAME,
-    CONF_HOST,
-    CONF_MAC,
-    CONF_PORT,
-    CONF_TYPE,
-    DEFAULT_MODEL,
-    DEFAULT_NAME,
-    DEFAULT_SWITCH_COUNT,
-    DEFAULT_TYPE,
-    DOMAIN,
-    model_to_prefix,
-    short_mac,
-)
+from .const import DOMAIN
 from .coordinator import Wb2Coordinator
 
 
@@ -30,84 +17,42 @@ async def async_setup_entry(
     entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Set up the WB2 relay switches from a config entry."""
     coordinator: Wb2Coordinator = hass.data[DOMAIN][entry.entry_id]
-    host: str = entry.data[CONF_HOST]
-    port: int = entry.data[CONF_PORT]
-    base_name: str = entry.data.get(CONF_DEVICE_NAME, DEFAULT_NAME)
-    mac: str | None = entry.data.get(CONF_MAC)
-    dtype: str = entry.data.get(CONF_TYPE, DEFAULT_TYPE)
-
-    device_name = coordinator.data.name if coordinator.data and coordinator.data.name else base_name
-    model = coordinator.data.model if coordinator.data and coordinator.data.model else DEFAULT_MODEL
-    sw_version = coordinator.data.sw_version if coordinator.data else None
-    names = coordinator.data.names if coordinator.data else None
-    count = _channel_count(coordinator)
-
-    async_add_entities(
-        Wb2Switch(
-            coordinator, device_name, model, sw_version, names, host, port, mac, dtype, channel
-        )
-        for channel in range(count)
-    )
-
-
-def _channel_count(coordinator: Wb2Coordinator) -> int:
-    """Number of relay channels reported by the device (fallback default)."""
-    if coordinator.data and coordinator.data.count:
-        return coordinator.data.count
-    return DEFAULT_SWITCH_COUNT
+    entities = []
+    for edef in coordinator.device_info.entities:
+        if edef.type == "switch":
+            entities.append(Wb2Switch(coordinator, edef))
+    async_add_entities(entities)
 
 
 class Wb2Switch(CoordinatorEntity[Wb2Coordinator], SwitchEntity):
-    """One WB2 relay channel exposed as a Home Assistant switch."""
+    """Switch entity driven by device-reported entity definition."""
 
-    _attr_has_entity_name = False
+    _attr_has_entity_name = True
 
-    def __init__(
-        self,
-        coordinator: Wb2Coordinator,
-        device_name: str,
-        model: str,
-        sw_version: str | None,
-        names: list[str] | None,
-        host: str,
-        port: int,
-        mac: str | None,
-        dtype: str,
-        channel: int,
-    ) -> None:
+    def __init__(self, coordinator: Wb2Coordinator, edef) -> None:
         super().__init__(coordinator)
-        self._channel = channel
-        short = short_mac(mac)
-        prefix = model_to_prefix(model, dtype)
-        if short:
-            self.entity_id = f"switch.{prefix}_{short.lower()}_switch_{channel + 1:03d}"
-            self._attr_unique_id = f"{DOMAIN}_{mac}_switch_{channel}"
-            identifiers = {(DOMAIN, mac)}
-        else:
-            self._attr_unique_id = f"{DOMAIN}_{host}_{port}_switch_{channel}"
-            identifiers = {(DOMAIN, f"{host}:{port}")}
+        self._entity_id = edef.id
+        self._attr_unique_id = f"{DOMAIN}_{edef.id}"
+        self._attr_name = edef.name
+        self._attr_icon = edef.icon
+        self._attr_device_info = _device_info(coordinator)
 
-        if names and channel < len(names) and names[channel]:
-            self._attr_name = names[channel]
-        else:
-            self._attr_name = device_name
-
-        self._attr_device_info = {
-            "identifiers": identifiers,
-            "name": device_name,
-            "manufacturer": "Ai-Thinker",
-            "model": model,
-            "sw_version": sw_version,
-        }
+    def _get_entity_data(self) -> dict:
+        state = self.coordinator.data
+        if state is None:
+            return {}
+        entity_state = state.find_entity(self._entity_id)
+        if entity_state is None:
+            return {}
+        return entity_state.data
 
     @property
     def is_on(self) -> bool | None:
-        state = self.coordinator.data
-        if state is None:
+        data = self._get_entity_data()
+        if not data:
             return None
-        on = state.channel_state(self._channel)
+        on = data.get("on")
         if on is None:
             return None
         return bool(on)
@@ -117,11 +62,25 @@ class Wb2Switch(CoordinatorEntity[Wb2Coordinator], SwitchEntity):
         return self.coordinator.last_update_success and super().available
 
     async def async_turn_on(self, **kwargs) -> None:
-        """Turn this relay channel on."""
-        await self.coordinator.client.set_state(on=True, channel=self._channel)
-        await self.coordinator.async_request_refresh()
+        state = await self.coordinator.client.set_state(
+            entity_id=self._entity_id, params={"on": 1}
+        )
+        self.coordinator.async_set_updated_data(state)
 
     async def async_turn_off(self, **kwargs) -> None:
-        """Turn this relay channel off."""
-        await self.coordinator.client.set_state(on=False, channel=self._channel)
-        await self.coordinator.async_request_refresh()
+        state = await self.coordinator.client.set_state(
+            entity_id=self._entity_id, params={"on": 0}
+        )
+        self.coordinator.async_set_updated_data(state)
+
+
+def _device_info(coordinator: Wb2Coordinator) -> dict:
+    info = coordinator.device_info
+    mac = info.mac
+    return {
+        "identifiers": {(DOMAIN, mac)} if mac else {(DOMAIN, info.name)},
+        "name": info.name,
+        "manufacturer": "Ai-Thinker",
+        "model": info.model,
+        "sw_version": info.sw_version,
+    }
