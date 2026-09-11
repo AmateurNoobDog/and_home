@@ -35,6 +35,7 @@ from .const import (
     DOMAIN,
     MDNS_SERVICE_TYPE,
     SCAN_TIMEOUT,
+    normalize_mac,
     short_mac,
 )
 from .tcp_client import Wb2DeviceInfo, probe_device
@@ -189,6 +190,11 @@ class Wb2ConfigFlow(ConfigFlow, domain=DOMAIN):
                 entry.data.get(CONF_HOST)
                 for entry in self._async_current_entries()
             }
+            existing_macs = {
+                normalize_mac(entry.data.get(CONF_MAC))
+                for entry in self._async_current_entries()
+                if entry.data.get(CONF_MAC)
+            }
             options: list[SelectOptionDict] = [
                 SelectOptionDict(
                     value=host,
@@ -196,6 +202,7 @@ class Wb2ConfigFlow(ConfigFlow, domain=DOMAIN):
                 )
                 for host, info in sorted((self._scan_found or {}).items())
                 if host not in existing_hosts
+                and normalize_mac(info.mac) not in existing_macs
             ]
             options.append(
                 SelectOptionDict(value=MANUAL_OPTION, label="手动输入 IP 地址")
@@ -323,13 +330,19 @@ class Wb2ConfigFlow(ConfigFlow, domain=DOMAIN):
         self, host: str, port: int, info: Wb2DeviceInfo | None = None,
         host_ip: str | None = None,
     ) -> ConfigFlowResult:
-        for existing in self._async_current_entries():
-            if (
-                existing.data.get(CONF_HOST) == host
-                and existing.data.get(CONF_PORT) == port
-            ):
-                return self.async_abort(reason="already_configured")
         mac = info.mac if info else None
+        normalized_mac = normalize_mac(mac)
+
+        for existing in self._async_current_entries():
+            existing_host = existing.data.get(CONF_HOST)
+            existing_port = existing.data.get(CONF_PORT)
+            existing_mac = normalize_mac(existing.data.get(CONF_MAC))
+
+            if existing_host == host and existing_port == port:
+                return self.async_abort(reason="already_configured")
+            if normalized_mac and existing_mac and normalized_mac == existing_mac:
+                return self.async_abort(reason="already_configured")
+
         short = short_mac(mac)
         model = info.model if info else None
         dev_name = info.name if info and info.name else None

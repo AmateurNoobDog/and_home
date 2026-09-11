@@ -30,11 +30,18 @@ MDNS_SERVICE_TYPE = "_aitinker._tcp"
 RADAR_GATE_DATA_ENABLE = False  # 门数据开关
 
 
+def normalize_mac(mac: str | None) -> str:
+    """Normalize MAC address to uppercase without separators."""
+    if not mac:
+        return ""
+    return mac.replace(":", "").replace("-", "").upper()
+
+
 def short_mac(mac: str | None) -> str:
     """Return the last 6 hex digits of a MAC address, uppercased."""
     if not mac:
         return ""
-    cleaned = mac.replace(":", "").replace("-", "").upper()
+    cleaned = normalize_mac(mac)
     return cleaned[-6:] if len(cleaned) >= 6 else cleaned
 
 
