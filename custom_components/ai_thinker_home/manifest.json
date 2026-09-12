@@ -10,5 +10,5 @@
   "zeroconf": [
     {"type": "_aitinker._tcp.local.", "name": "ai-*"}
   ],
-  "version": "0.10.0"
+  "version": "1.0.0"
 }

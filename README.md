@@ -86,7 +86,7 @@ Ai-Thinker WB2 系列设备使用 **TCP Socket + JSON 行协议** 进行通信�
   "mac": "AA:BB:CC:DD:EE:FF",
   "name": "客厅灯",
   "model": "Ai-Thinker",
-  "sw_version": "0.10.0",
+  "sw_version": "1.0.0",
   "entities": [
     {"id": "light_01", "type": "light", "name": "主灯", "icon": "mdi:white-balance-sunny"},
     {"id": "switch_01", "type": "switch", "name": "开关1", "icon": "mdi:power"},
