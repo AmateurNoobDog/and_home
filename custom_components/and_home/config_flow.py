@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import asyncio
 from ipaddress import IPv4Address, ip_address, ip_network
-import json
 import logging
 from typing import Any
 
@@ -28,12 +27,10 @@ from .const import (
     CONF_DEVICE_NAME,
     CONF_MAC,
     CONF_TYPE,
-    DEVICE_TYPE_SWITCH,
     DEFAULT_NAME,
     DEFAULT_PORT,
     DEFAULT_TYPE,
     DOMAIN,
-    MDNS_SERVICE_TYPE,
     SCAN_TIMEOUT,
     normalize_mac,
     short_mac,
@@ -352,9 +349,9 @@ class Wb2ConfigFlow(ConfigFlow, domain=DOMAIN):
         elif model and short:
             title = f"{model} {short}"
         elif short:
-            title = f"AI-Thinker {short}"
+            title = f"AND {short}"
         else:
-            title = f"AI-Thinker {host}"
+            title = f"AND {host}"
         data = {
             CONF_HOST: host,
             CONF_PORT: port,

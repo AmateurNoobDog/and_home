@@ -1,4 +1,4 @@
-"""Sensor entities for Ai-Thinker WB2 devices (data-driven by entity id)."""
+"""Sensor entities for AND WB2 devices (data-driven by entity id)."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import DOMAIN
+from .const import DOMAIN, device_info
 from .coordinator import Wb2Coordinator
 
 
@@ -36,7 +36,7 @@ class Wb2Sensor(CoordinatorEntity[Wb2Coordinator], SensorEntity):
         self._attr_unique_id = f"{DOMAIN}_{edef.id}"
         self._attr_name = edef.name
         self._attr_icon = edef.icon
-        self._attr_device_info = _device_info(coordinator)
+        self._attr_device_info = device_info(coordinator)
 
     @property
     def native_value(self) -> str | None:
@@ -47,19 +47,3 @@ class Wb2Sensor(CoordinatorEntity[Wb2Coordinator], SensorEntity):
         if entity_state is None:
             return None
         return str(entity_state.data.get("value", ""))
-
-    @property
-    def available(self) -> bool:
-        return self.coordinator.last_update_success and super().available
-
-
-def _device_info(coordinator: Wb2Coordinator) -> dict:
-    info = coordinator.device_info
-    mac = info.mac
-    return {
-        "identifiers": {(DOMAIN, mac)} if mac else {(DOMAIN, info.name)},
-        "name": info.name,
-        "manufacturer": "Ai-Thinker",
-        "model": info.model,
-        "sw_version": info.sw_version,
-    }

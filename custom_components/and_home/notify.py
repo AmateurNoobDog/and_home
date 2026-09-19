@@ -1,0 +1,53 @@
+"""Notify entities for AND TTS devices."""
+
+from __future__ import annotations
+
+import logging
+
+from homeassistant.components.notify import NotifyEntity
+from homeassistant.config_entries import ConfigEntry
+from homeassistant.core import HomeAssistant
+from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.update_coordinator import CoordinatorEntity
+
+from .const import DOMAIN, device_info
+from .coordinator import Wb2Coordinator
+
+_LOGGER = logging.getLogger(__name__)
+
+
+async def async_setup_entry(
+    hass: HomeAssistant,
+    entry: ConfigEntry,
+    async_add_entities: AddEntitiesCallback,
+) -> None:
+    coordinator: Wb2Coordinator = hass.data[DOMAIN][entry.entry_id]
+    entities = []
+    for edef in coordinator.device_info.entities:
+        if edef.type == "notify":
+            entities.append(Wb2Notify(coordinator, edef))
+    async_add_entities(entities)
+
+
+class Wb2Notify(CoordinatorEntity[Wb2Coordinator], NotifyEntity):
+    """Notify entity for TTS devices."""
+
+    _attr_has_entity_name = True
+
+    def __init__(self, coordinator: Wb2Coordinator, edef) -> None:
+        super().__init__(coordinator)
+        self._entity_id = edef.id
+        self._attr_unique_id = f"{DOMAIN}_{edef.id}"
+        self._attr_name = edef.name
+        self._attr_icon = edef.icon
+        self._attr_device_info = device_info(coordinator)
+
+    async def async_send_message(self, message: str, **kwargs) -> None:
+        """Send a TTS message to the device."""
+        try:
+            await self.coordinator.client.set_state(
+                entity_id=self._entity_id,
+                params={"cmd": "text", "text": message},
+            )
+        except Exception as err:
+            _LOGGER.error("TTS send failed for %s: %s", self._entity_id, err)

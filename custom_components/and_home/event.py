@@ -1,4 +1,4 @@
-"""Event entity for Ai-Thinker event devices (data-driven by entity id)."""
+"""Event entity for AND event devices (data-driven by entity id)."""
 
 from __future__ import annotations
 
@@ -10,7 +10,7 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import DOMAIN
+from .const import DOMAIN, device_info
 from .coordinator import Wb2Coordinator
 
 _LOGGER = logging.getLogger(__name__)
@@ -41,7 +41,7 @@ class Wb2EventEntity(CoordinatorEntity[Wb2Coordinator], EventEntity):
         self._attr_unique_id = f"{DOMAIN}_{edef.id}"
         self._attr_name = edef.name
         self._attr_icon = edef.icon
-        self._attr_device_info = _device_info(coordinator)
+        self._attr_device_info = device_info(coordinator)
         self._last_event_type: str | None = None
         self._last_event_id: str | None = None
 
@@ -77,15 +77,3 @@ class Wb2EventEntity(CoordinatorEntity[Wb2Coordinator], EventEntity):
             "last_event_id": self._last_event_id,
             "last_event_type": self._last_event_type,
         }
-
-
-def _device_info(coordinator: Wb2Coordinator) -> dict:
-    info = coordinator.device_info
-    mac = info.mac
-    return {
-        "identifiers": {(DOMAIN, mac)} if mac else {(DOMAIN, info.name)},
-        "name": info.name,
-        "manufacturer": "Ai-Thinker",
-        "model": info.model,
-        "sw_version": info.sw_version,
-    }

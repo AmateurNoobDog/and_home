@@ -1,4 +1,4 @@
-"""Switch entities for Ai-Thinker WB2 devices (data-driven by entity id)."""
+"""Switch entities for AND WB2 devices (data-driven by entity id)."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import DOMAIN
+from .const import DOMAIN, device_info
 from .coordinator import Wb2Coordinator
 
 
@@ -36,7 +36,7 @@ class Wb2Switch(CoordinatorEntity[Wb2Coordinator], SwitchEntity):
         self._attr_unique_id = f"{DOMAIN}_{edef.id}"
         self._attr_name = edef.name
         self._attr_icon = edef.icon
-        self._attr_device_info = _device_info(coordinator)
+        self._attr_device_info = device_info(coordinator)
 
     def _get_entity_data(self) -> dict:
         state = self.coordinator.data
@@ -57,10 +57,6 @@ class Wb2Switch(CoordinatorEntity[Wb2Coordinator], SwitchEntity):
             return None
         return bool(on)
 
-    @property
-    def available(self) -> bool:
-        return self.coordinator.last_update_success and super().available
-
     async def async_turn_on(self, **kwargs) -> None:
         state = await self.coordinator.client.set_state(
             entity_id=self._entity_id, params={"on": 1}
@@ -72,15 +68,3 @@ class Wb2Switch(CoordinatorEntity[Wb2Coordinator], SwitchEntity):
             entity_id=self._entity_id, params={"on": 0}
         )
         self.coordinator.async_set_updated_data(state)
-
-
-def _device_info(coordinator: Wb2Coordinator) -> dict:
-    info = coordinator.device_info
-    mac = info.mac
-    return {
-        "identifiers": {(DOMAIN, mac)} if mac else {(DOMAIN, info.name)},
-        "name": info.name,
-        "manufacturer": "Ai-Thinker",
-        "model": info.model,
-        "sw_version": info.sw_version,
-    }

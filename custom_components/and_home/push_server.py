@@ -15,6 +15,8 @@ if TYPE_CHECKING:
 _LOGGER = logging.getLogger(__name__)
 
 PUSH_PORT = 9101
+_MAX_RETRIES = 3
+_RETRY_DELAY = 2  # seconds
 
 
 class PushServer:
@@ -25,8 +27,8 @@ class PushServer:
     def __init__(self, hass: HomeAssistant) -> None:
         self.hass = hass
         self._server: asyncio.Server | None = None
-        self._coordinators: dict[str, Wb2Coordinator] = {}
         self._ip_map: dict[str, str] = {}  # ip -> entry_id
+        self._starting: bool = False
 
     @classmethod
     def get_instance(cls, hass: HomeAssistant) -> PushServer:
@@ -53,20 +55,43 @@ class PushServer:
 
     def _coordinator_for_ip(self, ip: str) -> Wb2Coordinator | None:
         entry_id = self._ip_map.get(ip)
-        if entry_id and entry_id in self.hass.data.get("ai_thinker_home", {}):
-            return self.hass.data["ai_thinker_home"][entry_id]
+        if entry_id and entry_id in self.hass.data.get("and_home", {}):
+            return self.hass.data["and_home"][entry_id]
         return None
 
     async def async_start(self) -> None:
-        if self._server is not None:
+        if self._server is not None or self._starting:
             return
-        try:
-            self._server = await asyncio.start_server(
-                self._handle_client, "0.0.0.0", PUSH_PORT
-            )
-            _LOGGER.info("Push server listening on port %d", PUSH_PORT)
-        except OSError as err:
-            _LOGGER.warning("Push server port %d already in use: %s", PUSH_PORT, err)
+        self._starting = True
+        for attempt in range(_MAX_RETRIES):
+            try:
+                self._server = await asyncio.start_server(
+                    self._handle_client, "0.0.0.0", PUSH_PORT
+                )
+                _LOGGER.info("Push server listening on port %d", PUSH_PORT)
+                return
+            except OSError as err:
+                if attempt < _MAX_RETRIES - 1:
+                    _LOGGER.warning(
+                        "Port %d in use (attempt %d/%d), retrying in %ds...",
+                        PUSH_PORT, attempt + 1, _MAX_RETRIES, _RETRY_DELAY,
+                    )
+                    await asyncio.sleep(_RETRY_DELAY)
+                else:
+                    _LOGGER.warning(
+                        "Push server port %d unavailable after %d attempts: %s",
+                        PUSH_PORT, _MAX_RETRIES, err,
+                    )
+
+    async def async_stop(self) -> None:
+        """Shutdown the push server and release resources."""
+        if self._server is not None:
+            self._server.close()
+            await self._server.wait_closed()
+            self._server = None
+        self._starting = False
+        PushServer._instance = None
+        _LOGGER.info("Push server stopped")
 
     async def _handle_client(
         self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter

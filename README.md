@@ -1,8 +1,8 @@
-# Ai-Thinker WB2 设备通信协议文档
+# AND WB2 设备通信协议文档
 
 ## 概述
 
-Ai-Thinker WB2 系列设备使用 **TCP Socket + JSON 行协议** 进行通信。设备作为 TCP 服务器，Home Assistant 集成作为客户端连接设备并发送命令。
+AND WB2 系列设备使用 **TCP Socket + JSON 行协议** 进行通信。设备作为 TCP 服务器，Home Assistant 集成作为客户端连接设备并发送命令。
 
 **协议版本**: v2（实体驱动架构）
 
@@ -85,7 +85,7 @@ Ai-Thinker WB2 系列设备使用 **TCP Socket + JSON 行协议** 进行通信�
 {
   "mac": "AA:BB:CC:DD:EE:FF",
   "name": "客厅灯",
-  "model": "Ai-Thinker",
+  "model": "AND",
   "sw_version": "1.0.0",
   "entities": [
     {"id": "light_01", "type": "light", "name": "主灯", "icon": "mdi:white-balance-sunny"},
@@ -209,10 +209,10 @@ Home Assistant 集成支持两种设备发现方式：
 
 ### Zeroconf / mDNS 自动发现
 
-设备通过 mDNS 广播 `_aitinker._tcp` 服务类型，Home Assistant 可自动发现局域网内的 Ai-Thinker 设备：
+设备通过 mDNS 广播 `_and._tcp` 服务类型，Home Assistant 可自动发现局域网内的 AND 设备：
 
-1. **服务类型**: `_aitinker._tcp.local.`
-2. **设备名称格式**: `ai-{type}-{mac_suffix}` (如 `ai-light-AABBCC`)
+1. **服务类型**: `_and._tcp.local.`
+2. **设备名称格式**: `and-{type}-{mac_suffix}` (如 `and-light-AABBCC`)
 3. **发现流程**: 设备广播 → HA 自动识别 → 用户确认添加
 4. **DNS 回退**: 连接失败时自动使用缓存 IP 地址
 
@@ -248,11 +248,11 @@ DEVICE_TYPE_KEY_SENSOR = "key_sensor"
 # 默认值
 DEFAULT_NAME = "Light"
 DEFAULT_TYPE = "light"
-DEFAULT_MODEL = "Ai-Thinker"
+DEFAULT_MODEL = "AND"
 DEFAULT_SWITCH_COUNT = 3
 
 # mDNS 服务类型
-MDNS_SERVICE_TYPE = "_aitinker._tcp"
+MDNS_SERVICE_TYPE = "_and._tcp"
 
 # 配置键名
 CONF_HOST = "host"
@@ -494,7 +494,7 @@ echo '{"cmd":"calibrate"}' | nc 192.168.1.100 9100
 
 ### 更新步骤
 
-1. 从 Ai-Thinker 官方获取最新固件
+1. 从安信可官方获取最新固件
 2. 按照设备文档进行固件更新
 3. 更新完成后设备自动重启
 4. 在 Home Assistant 中重新添加设备
@@ -510,7 +510,7 @@ echo '{"cmd":"calibrate"}' | nc 192.168.1.100 9100
 
 ## 相关链接
 
-- [Ai-Thinker 官网](https://www.ai-thinker.com/)
+- [安信可官网](https://docs.ai-thinker.com/)
 - [Home Assistant](https://www.home-assistant.io/)
 - [HACS](https://hacs.xyz/)
 

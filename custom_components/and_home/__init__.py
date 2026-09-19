@@ -21,6 +21,8 @@ _PLATFORM_MAP = {
     "button": [Platform.BUTTON],
     "event": [Platform.EVENT],
     "sensor": [Platform.SENSOR],
+    "notify": [Platform.NOTIFY],
+    "number": [Platform.NUMBER],
 }
 
 
@@ -80,10 +82,12 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     platforms = _platforms_for_entity_types(entity_types)
 
     unload_ok = await hass.config_entries.async_unload_platforms(entry, platforms)
-    await coordinator.client.close()
 
     from .push_server import PushServer
     push_server = PushServer.get_instance(hass)
     push_server.unregister(entry)
+
+    if not push_server._ip_map:
+        await push_server.async_stop()
 
     return unload_ok

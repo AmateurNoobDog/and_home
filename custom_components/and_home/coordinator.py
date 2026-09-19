@@ -35,30 +35,21 @@ class Wb2Coordinator(DataUpdateCoordinator[Wb2State]):
         )
         self.client = client
         self.device_info = device_info
-        self.last_error: str | None = None
+        self._consecutive_failures: int = 0
 
     async def _async_update_data(self) -> Wb2State:
         try:
             state = await self.client.get_state()
-            self.last_error = None
+            self._consecutive_failures = 0
             return state
         except Exception as err:
-            self.last_error = str(err)
-            raise UpdateFailed(f"Error communicating with WB2 device: {err}") from err
-
-    def get_entity_def(self, entity_id: str):
-        """Find entity definition by id."""
-        for e in self.device_info.entities:
-            if e.id == entity_id:
-                return e
-        return None
-
-    async def async_calibrate(self) -> Wb2State:
-        return await self.client.calibrate()
-
-    async def async_restore_defaults(self) -> Wb2State:
-        return await self.client.restore_defaults()
-
-    async def async_push_update(self, state: Wb2State) -> None:
-        """Accept a push update from the PushServer."""
-        self.async_set_updated_data(state)
+            self._consecutive_failures += 1
+            label = self.device_info.name or self.client.host
+            if self._consecutive_failures == 1:
+                _LOGGER.warning("Device %s offline: %s", label, err)
+            else:
+                _LOGGER.debug(
+                    "Device %s still offline (attempt %d)",
+                    label, self._consecutive_failures,
+                )
+            raise UpdateFailed(str(err)) from err

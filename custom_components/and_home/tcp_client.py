@@ -169,15 +169,6 @@ class Wb2Client:
         data = await self._request(json.dumps(cmd_dict))
         return Wb2State.from_dict(data)
 
-    async def close(self) -> None:
-        pass
-
-    async def calibrate(self) -> Wb2State:
-        return await self.send_cmd("calibrate")
-
-    async def restore_defaults(self) -> Wb2State:
-        return await self.send_cmd("restore")
-
 
 async def probe_device(
     host: str, port: int, timeout: float = 0.3
