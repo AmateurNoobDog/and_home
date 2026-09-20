@@ -349,9 +349,9 @@ class Wb2ConfigFlow(ConfigFlow, domain=DOMAIN):
         elif model and short:
             title = f"{model} {short}"
         elif short:
-            title = f"AND {short}"
+            title = f"AND_Home {short}"
         else:
-            title = f"AND {host}"
+            title = f"AND_Home {host}"
         data = {
             CONF_HOST: host,
             CONF_PORT: port,
