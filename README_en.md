@@ -1,54 +1,54 @@
-> **Language: [English](README_en.md) | 中文**
+> **Language: English | [中文](README.md)**
 
-# AND WB2 设备通信协议文档
+# AND WB2 Device Communication Protocol Documentation
 
-## 概述
+## Overview
 
-AND WB2 系列设备使用 **TCP Socket + JSON 行协议** 进行通信。设备作为 TCP 服务器，Home Assistant 集成作为客户端连接设备并发送命令。
+AND WB2 series devices communicate using **TCP Socket + JSON line protocol**. The device acts as a TCP server, and the Home Assistant integration connects as a TCP client to send commands.
 
-**协议版本**: v2（实体驱动架构）
+**Protocol Version**: v2 (Entity-driven architecture)
 
-**协议特点**:
-- 传输层：TCP
-- 数据格式：JSON（每行一条消息，以 `\n` 分隔）
-- 连接模式：短连接（每次请求建立新连接，设备会在空闲几秒后自动断开）
-- 默认端口：9100
-- 实体定义：设备上报（`get_device` 命令返回实体列表）
-
----
-
-## 连接参数
-
-| 参数 | 默认值 | 说明 |
-|------|--------|------|
-| 端口 | 9100 | 设备 TCP 监听端口 |
-| 超时 | 3.0 秒 | 正常请求超时 |
-| 扫描超时 | 0.3 秒 | 设备发现时的超时时间 |
-| 轮询间隔 | 10 秒 | Home Assistant 状态更新频率 |
+**Protocol Features**:
+- Transport layer: TCP
+- Data format: JSON (one message per line, separated by `\n`)
+- Connection mode: Short-lived connections (new connection for each request, device auto-disconnects after a few seconds of idle time)
+- Default port: 9100
+- Entity definition: Device-reported (`get_device` command returns entity list)
 
 ---
 
-## 请求格式
+## Connection Parameters
 
-所有请求均为单行 JSON 对象，以 `\n` 结尾。
+| Parameter | Default Value | Description |
+|-----------|---------------|-------------|
+| Port | 9100 | Device TCP listening port |
+| Timeout | 3.0 seconds | Normal request timeout |
+| Scan timeout | 0.3 seconds | Timeout during device discovery |
+| Poll interval | 10 seconds | Home Assistant state update frequency |
 
-### 获取设备信息和实体定义
+---
+
+## Request Format
+
+All requests are single-line JSON objects ending with `\n`.
+
+### Get Device Info and Entity Definitions
 
 ```json
 {"cmd":"get_device"}\n
 ```
 
-**返回**: 设备基本信息和所有实体定义（`Wb2DeviceInfo`）。
+**Returns**: Device basic info and all entity definitions (`Wb2DeviceInfo`).
 
-### 获取实体状态
+### Get Entity States
 
 ```json
 {"cmd":"get_state"}\n
 ```
 
-**返回**: 所有实体的当前状态（`Wb2State`，包含 `entities[]`）。
+**Returns**: Current state of all entities (`Wb2State`, contains `entities[]`).
 
-### 设置实体状态
+### Set Entity State
 
 ```json
 {"cmd":"set","id":"light_01","r":255,"g":0,"b":128}\n
@@ -56,7 +56,7 @@ AND WB2 系列设备使用 **TCP Socket + JSON 行协议** 进行通信。设备
 {"cmd":"set","id":"light_01","brightness":128}\n
 ```
 
-### 发送通用命令
+### Send General Commands
 
 ```json
 {"cmd":"pair"}\n
@@ -65,23 +65,23 @@ AND WB2 系列设备使用 **TCP Socket + JSON 行协议** 进行通信。设备
 {"cmd":"restore"}\n
 ```
 
-### 请求字段说明
+### Request Field Description
 
-| 字段 | 类型 | 必需 | 说明 |
-|------|------|------|------|
-| `cmd` | string | 是 | 命令类型：`get_device`、`get_state`、`set`、`pair`、`reset`、`calibrate`、`restore` |
-| `id` | string | 否 | 目标实体 ID（`set` 命令必需） |
-| `r` | int | 否 | 红色通道值 (0-255) |
-| `g` | int | 否 | 绿色通道值 (0-255) |
-| `b` | int | 否 | 蓝色通道值 (0-255) |
-| `brightness` | int | 否 | 亮度值 (0-255) |
-| `on` | int | 否 | 开关状态 (0=关闭, 1=打开) |
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `cmd` | string | Yes | Command type: `get_device`, `get_state`, `set`, `pair`, `reset`, `calibrate`, `restore` |
+| `id` | string | No | Target entity ID (required for `set` command) |
+| `r` | int | No | Red channel value (0-255) |
+| `g` | int | No | Green channel value (0-255) |
+| `b` | int | No | Blue channel value (0-255) |
+| `brightness` | int | No | Brightness value (0-255) |
+| `on` | int | No | Switch state (0=off, 1=on) |
 
 ---
 
-## 响应格式
+## Response Format
 
-### get_device 响应
+### get_device Response
 
 ```json
 {
@@ -100,7 +100,7 @@ AND WB2 系列设备使用 **TCP Socket + JSON 行协议** 进行通信。设备
 }
 ```
 
-### get_state 响应
+### get_state Response
 
 ```json
 {
@@ -115,148 +115,148 @@ AND WB2 系列设备使用 **TCP Socket + JSON 行协议** 进行通信。设备
 }
 ```
 
-### 响应字段说明
+### Response Field Description
 
-#### Wb2DeviceInfo（设备信息）
+#### Wb2DeviceInfo (Device Info)
 
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| `mac` | string | 设备 MAC 地址 |
-| `name` | string | 设备显示名称 |
-| `model` | string | 设备型号 |
-| `sw_version` | string | 固件版本 |
-| `entities` | list | 实体定义列表 |
+| Field | Type | Description |
+|-------|------|-------------|
+| `mac` | string | Device MAC address |
+| `name` | string | Device display name |
+| `model` | string | Device model |
+| `sw_version` | string | Firmware version |
+| `entities` | list | Entity definition list |
 
-#### Wb2EntityDef（实体定义）
+#### Wb2EntityDef (Entity Definition)
 
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| `id` | string | 实体唯一标识符 |
-| `type` | string | 实体类型（见下方类型表） |
-| `name` | string | 实体显示名称 |
-| `icon` | string | 图标 (MDI 图标名) |
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | string | Entity unique identifier |
+| `type` | string | Entity type (see type table below) |
+| `name` | string | Entity display name |
+| `icon` | string | Icon (MDI icon name) |
 
-#### Wb2State（状态响应）
+#### Wb2State (State Response)
 
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| `state` | string | 设备状态（`online`/`offline`） |
-| `entities` | list | 实体状态列表 |
+| Field | Type | Description |
+|-------|------|-------------|
+| `state` | string | Device state (`online`/`offline`) |
+| `entities` | list | Entity state list |
 
-#### Wb2EntityState（实体状态）
+#### Wb2EntityState (Entity State)
 
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| `id` | string | 实体 ID |
-| `type` | string | 实体类型 |
-| `data` | dict | 实体数据（类型相关） |
-
----
-
-## 实体类型
-
-| 类型 | 说明 | 数据字段 |
-|------|------|----------|
-| `light` | RGB LED 灯 | `r`, `g`, `b`, `brightness` |
-| `switch` | 继电器开关 | `on` (0/1) |
-| `binary_sensor` | 二进制传感器 | `motion`, `presence` (0/1) |
-| `sensor` | 数据传感器 | `value` (字符串) |
-| `event` | 事件实体 | `event_type`, `event_id` |
-
-### light（RGB 灯）
-
-支持功能：
-- 颜色控制 (RGB)
-- 亮度调节
-- 开关控制
-
-数据字段：`r`, `g`, `b`, `brightness`
-
-### switch（继电器开关）
-
-支持功能：
-- 开关控制
-
-数据字段：`on` (0=关闭, 1=打开)
-
-### binary_sensor（二进制传感器）
-
-支持功能：
-- 存在检测
-- 运动检测
-
-数据字段：`motion`, `presence` (0=无, 1=有)
-
-### sensor（数据传感器）
-
-支持功能：
-- 键值上报
-- 其他数值型数据
-
-数据字段：`value` (字符串)
-
-### event（事件实体）
-
-支持功能：
-- 按键按下/释放事件
-- 遥控器事件
-
-事件类型：`press`, `release`
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | string | Entity ID |
+| `type` | string | Entity type |
+| `data` | dict | Entity data (type-dependent) |
 
 ---
 
-## 设备发现机制
+## Entity Types
 
-Home Assistant 集成支持两种设备发现方式：
+| Type | Description | Data Fields |
+|------|-------------|-------------|
+| `light` | RGB LED light | `r`, `g`, `b`, `brightness` |
+| `switch` | Relay switch | `on` (0/1) |
+| `binary_sensor` | Binary sensor | `motion`, `presence` (0/1) |
+| `sensor` | Data sensor | `value` (string) |
+| `event` | Event entity | `event_type`, `event_id` |
 
-### Zeroconf / mDNS 自动发现
+### light (RGB Light)
 
-设备通过 mDNS 广播 `_and._tcp` 服务类型，Home Assistant 可自动发现局域网内的 AND 设备：
+Supported features:
+- Color control (RGB)
+- Brightness adjustment
+- On/off control
 
-1. **服务类型**: `_and._tcp.local.`
-2. **设备名称格式**: `and-{type}-{mac_suffix}` (如 `and-light-AABBCC`)
-3. **发现流程**: 设备广播 → HA 自动识别 → 用户确认添加
-4. **DNS 回退**: 连接失败时自动使用缓存 IP 地址
+Data fields: `r`, `g`, `b`, `brightness`
 
-### TCP 扫描发现
+### switch (Relay Switch)
 
-如果 Zeroconf 发现失败，还可以通过 TCP 扫描发现设备：
+Supported features:
+- On/off control
 
-1. **扫描范围**: 遍历所有本地网络接口，生成每个子网的 1-254 地址
-2. **扫描端口**: 9100
-3. **扫描方式**: 并发扫描（最多 64 个并发连接）
-4. **扫描超时**: 每个设备 0.3 秒
-5. **验证方法**: 发送 `{"cmd":"get_device"}` 命令，检查响应是否包含有效设备信息
+Data fields: `on` (0=off, 1=on)
 
-如果自动发现失败，用户可以手动输入设备 IP 地址。
+### binary_sensor (Binary Sensor)
+
+Supported features:
+- Presence detection
+- Motion detection
+
+Data fields: `motion`, `presence` (0=none, 1=detected)
+
+### sensor (Data Sensor)
+
+Supported features:
+- Key value reporting
+- Other numeric data
+
+Data fields: `value` (string)
+
+### event (Event Entity)
+
+Supported features:
+- Button press/release events
+- Remote control events
+
+Event types: `press`, `release`
 
 ---
 
-## 常量定义
+## Device Discovery Mechanism
+
+Home Assistant integration supports two device discovery methods:
+
+### Zeroconf / mDNS Auto Discovery
+
+Devices broadcast the `_and._tcp` service type via mDNS, allowing Home Assistant to automatically discover AND devices on the local network:
+
+1. **Service Type**: `_and._tcp.local.`
+2. **Device Name Format**: `and-{type}-{mac_suffix}` (e.g., `and-light-AABBCC`)
+3. **Discovery Flow**: Device broadcasts → HA auto-detects → User confirms addition
+4. **DNS Fallback**: Automatically uses cached IP address when connection fails
+
+### TCP Scan Discovery
+
+If Zeroconf discovery fails, devices can be discovered via TCP scanning:
+
+1. **Scan Range**: Iterates through all local network interfaces, generating addresses 1-254 for each subnet
+2. **Scan Port**: 9100
+3. **Scan Method**: Concurrent scanning (up to 64 concurrent connections)
+4. **Scan Timeout**: 0.3 seconds per device
+5. **Verification Method**: Sends `{"cmd":"get_device"}` command and checks if response contains valid device info
+
+If auto-discovery fails, users can manually enter the device IP address.
+
+---
+
+## Constant Definitions
 
 ```python
-# 连接参数
+# Connection parameters
 DEFAULT_PORT = 9100
-SCAN_TIMEOUT = 0.3  # 设备扫描超时（秒）
-POLL_INTERVAL = 10  # 状态轮询间隔（秒）
+SCAN_TIMEOUT = 0.3  # Device scan timeout (seconds)
+POLL_INTERVAL = 10  # State polling interval (seconds)
 
-# 设备类型
+# Device types
 DEVICE_TYPE_LIGHT = "light"
 DEVICE_TYPE_SWITCH = "switch"
 DEVICE_TYPE_RADAR = "radar"
 DEVICE_TYPE_EVENT = "event"
 DEVICE_TYPE_KEY_SENSOR = "key_sensor"
 
-# 默认值
+# Default values
 DEFAULT_NAME = "Light"
 DEFAULT_TYPE = "light"
 DEFAULT_MODEL = "AND"
 DEFAULT_SWITCH_COUNT = 3
 
-# mDNS 服务类型
+# mDNS service type
 MDNS_SERVICE_TYPE = "_and._tcp"
 
-# 配置键名
+# Configuration keys
 CONF_HOST = "host"
 CONF_PORT = "port"
 CONF_DEVICE_NAME = "device_name"
@@ -266,7 +266,7 @@ CONF_TYPE = "type"
 
 ---
 
-## 数据结构定义 (Python)
+## Data Structure Definitions (Python)
 
 ### Wb2DeviceInfo
 
@@ -275,7 +275,7 @@ from dataclasses import dataclass, field
 
 @dataclass
 class Wb2EntityDef:
-    """实体定义"""
+    """Entity definition"""
     id: str
     type: str
     name: str = ""
@@ -284,7 +284,7 @@ class Wb2EntityDef:
 
 @dataclass
 class Wb2DeviceInfo:
-    """设备信息"""
+    """Device info"""
     mac: str = ""
     name: str = ""
     model: str = ""
@@ -318,7 +318,7 @@ class Wb2DeviceInfo:
 ```python
 @dataclass
 class Wb2EntityState:
-    """单个实体状态"""
+    """Single entity state"""
     id: str
     type: str
     data: dict = field(default_factory=dict)
@@ -337,7 +337,7 @@ class Wb2EntityState:
 ```python
 @dataclass
 class Wb2State:
-    """状态响应"""
+    """State response"""
     state: str = "online"
     entities: list[Wb2EntityState] = field(default_factory=list)
 
@@ -363,16 +363,16 @@ class Wb2State:
 
 ---
 
-## 代码示例
+## Code Examples
 
-### Python 异步客户端
+### Python Async Client
 
 ```python
 import asyncio
 import json
 
 async def get_device_info(host: str, port: int = 9100):
-    """获取设备信息和实体定义"""
+    """Get device info and entity definitions"""
     reader, writer = await asyncio.open_connection(host, port)
     try:
         writer.write(b'{"cmd":"get_device"}\n')
@@ -386,7 +386,7 @@ async def get_device_info(host: str, port: int = 9100):
         await writer.wait_closed()
 
 async def get_entity_states(host: str, port: int = 9100):
-    """获取所有实体状态"""
+    """Get all entity states"""
     reader, writer = await asyncio.open_connection(host, port)
     try:
         writer.write(b'{"cmd":"get_state"}\n')
@@ -400,7 +400,7 @@ async def get_entity_states(host: str, port: int = 9100):
         await writer.wait_closed()
 
 async def set_entity_state(host: str, entity_id: str, params: dict, port: int = 9100):
-    """设置实体状态"""
+    """Set entity state"""
     reader, writer = await asyncio.open_connection(host, port)
     try:
         cmd = {"cmd": "set", "id": entity_id}
@@ -416,7 +416,7 @@ async def set_entity_state(host: str, entity_id: str, params: dict, port: int = 
         await writer.wait_closed()
 
 async def send_command(host: str, cmd: str, port: int = 9100):
-    """发送通用命令"""
+    """Send general command"""
     reader, writer = await asyncio.open_connection(host, port)
     try:
         payload = json.dumps({"cmd": cmd})
@@ -430,92 +430,92 @@ async def send_command(host: str, cmd: str, port: int = 9100):
         writer.close()
         await writer.wait_closed()
 
-# 使用示例
+# Usage example
 async def main():
     host = "192.168.1.100"
     
-    # 获取设备信息
+    # Get device info
     device_info = await get_device_info(host)
-    print(f"设备: {device_info['model']} {device_info['name']}")
-    print(f"实体数量: {len(device_info['entities'])}")
+    print(f"Device: {device_info['model']} {device_info['name']}")
+    print(f"Entity count: {len(device_info['entities'])}")
     
-    # 获取状态
+    # Get states
     states = await get_entity_states(host)
     for entity in states["entities"]:
         print(f"  {entity['id']}: {entity.get('data', {})}")
     
-    # 设置灯颜色
+    # Set light color
     result = await set_entity_state(host, "light_01", {"r": 255, "g": 0, "b": 128})
-    print(f"设置结果: {result}")
+    print(f"Set result: {result}")
     
-    # 打开开关
+    # Turn on switch
     result = await set_entity_state(host, "switch_01", {"on": 1})
-    print(f"开关结果: {result}")
+    print(f"Switch result: {result}")
     
-    # 校准雷达
+    # Calibrate radar
     result = await send_command(host, "calibrate")
-    print(f"校准结果: {result}")
+    print(f"Calibrate result: {result}")
 
 if __name__ == "__main__":
     asyncio.run(main())
 ```
 
-### curl 测试命令
+### curl Test Commands
 
 ```bash
-# 获取设备信息
+# Get device info
 echo '{"cmd":"get_device"}' | nc 192.168.1.100 9100
 
-# 获取实体状态
+# Get entity states
 echo '{"cmd":"get_state"}' | nc 192.168.1.100 9100
 
-# 设置灯颜色
+# Set light color
 echo '{"cmd":"set","id":"light_01","r":255,"g":0,"b":128}' | nc 192.168.1.100 9100
 
-# 设置亮度
+# Set brightness
 echo '{"cmd":"set","id":"light_01","brightness":128}' | nc 192.168.1.100 9100
 
-# 打开开关
+# Turn on switch
 echo '{"cmd":"set","id":"switch_01","on":1}' | nc 192.168.1.100 9100
 
-# 433 配对
+# 433 pairing
 echo '{"cmd":"pair"}' | nc 192.168.1.100 9100
 
-# 校准雷达
+# Calibrate radar
 echo '{"cmd":"calibrate"}' | nc 192.168.1.100 9100
 ```
 
 ---
 
-## 固件更新
+## Firmware Update
 
-### 更新方式
+### Update Methods
 
-1. **串口更新**: 使用串口工具通过 UART 更新
-2. **OTA 更新**: 通过网络进行无线更新（需固件支持）
+1. **Serial Update**: Using serial tools via UART
+2. **OTA Update**: Wireless update over the network (requires firmware support)
 
-### 更新步骤
+### Update Steps
 
-1. 从安信可官方获取最新固件
-2. 按照设备文档进行固件更新
-3. 更新完成后设备自动重启
-4. 在 Home Assistant 中重新添加设备
+1. Get the latest firmware from Ai-Thinker official
+2. Follow device documentation for firmware update
+3. Device automatically restarts after update
+4. Re-add device in Home Assistant
 
-## 故障排除
+## Troubleshooting
 
-| 问题 | 解决方案 |
-|------|----------|
-| 设备无法连接 | 检查 IP 地址、网络连接、防火墙设置 |
-| 状态不同步 | 重启 Home Assistant，检查网络稳定性 |
-| 扫描不到设备 | 确保在同一局域网，尝试手动添加 |
-| 推送更新失败 | 检查 9101 端口是否被占用 |
+| Problem | Solution |
+|---------|----------|
+| Device cannot connect | Check IP address, network connection, firewall settings |
+| State not syncing | Restart Home Assistant, check network stability |
+| Cannot scan device | Ensure on same LAN, try manual addition |
+| Push update failed | Check if port 9101 is occupied |
 
-## 相关链接
+## Related Links
 
-- [安信可官网](https://docs.ai-thinker.com/)
+- [Ai-Thinker Official](https://docs.ai-thinker.com/)
 - [Home Assistant](https://www.home-assistant.io/)
 - [HACS](https://hacs.xyz/)
 
-## 许可证
+## License
 
 MIT License

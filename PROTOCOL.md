@@ -1,3 +1,5 @@
+> **Language: [English](PROTOCOL_en.md) | 中文**
+
 # AND Home 设备通信协议
 
 ## 概述
