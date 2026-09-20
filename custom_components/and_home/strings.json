@@ -25,7 +25,7 @@
         "description": "Enter the IP address and TCP port of your WB2 device."
       },
       "zeroconf_confirm": {
-        "title": "发现 AND_Home 设备",
+        "title": "发现 AND Home 设备",
         "description": "发现设备 **{name}**，是否添加？"
       }
     },

@@ -40,7 +40,7 @@ def device_info(coordinator) -> dict:
     return {
         "identifiers": {(DOMAIN, mac)} if mac else {(DOMAIN, info.name)},
         "name": info.name,
-        "manufacturer": "AND_Home",
+        "manufacturer": "AND Home",
         "model": info.model,
         "sw_version": info.sw_version,
     }

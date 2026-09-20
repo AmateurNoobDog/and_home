@@ -1,6 +1,6 @@
 {
   "domain": "and_home",
-  "name": "AND_Home",
+  "name": "AND Home",
   "codeowners": [],
   "config_flow": true,
   "dependencies": ["network"],
