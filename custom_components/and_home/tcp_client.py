@@ -27,6 +27,7 @@ class Wb2DeviceInfo:
     mac: str = ""
     name: str = ""
     model: str = ""
+    manufacturer: str = ""
     sw_version: str = ""
     entities: list[Wb2EntityDef] = field(default_factory=list)
 
@@ -47,6 +48,7 @@ class Wb2DeviceInfo:
             mac=data.get("mac", ""),
             name=data.get("name", ""),
             model=data.get("model", ""),
+            manufacturer=data.get("manufacturer", ""),
             sw_version=data.get("sw_version", ""),
             entities=entities,
         )

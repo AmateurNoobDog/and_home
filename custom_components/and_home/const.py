@@ -37,10 +37,12 @@ def device_info(coordinator) -> dict:
     """Build device_info dict for HA entity registration."""
     info = coordinator.device_info
     mac = info.mac
-    return {
+    result = {
         "identifiers": {(DOMAIN, mac)} if mac else {(DOMAIN, info.name)},
         "name": info.name,
-        "manufacturer": "AND Home",
         "model": info.model,
         "sw_version": info.sw_version,
     }
+    if info.manufacturer:
+        result["manufacturer"] = info.manufacturer
+    return result
