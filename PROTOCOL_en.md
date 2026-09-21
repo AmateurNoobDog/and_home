@@ -1,5 +1,13 @@
 > **Language: English | [中文](PROTOCOL.md)**
 
+AND Home is a Home Assistant custom integration. Current hardware platform is Ai-Thinker WB2.
+
+**Firmware Source Code**:
+- China Mainland: https://gitee.com/AmateurNoobDog/wb2_ha_firmware
+- China Hong Kong/Macau/Taiwan and Overseas: https://github.com/AmateurNoobDog/wb2_ha_firmware
+
+---
+
 # AND Home Device Communication Protocol
 
 ## Overview

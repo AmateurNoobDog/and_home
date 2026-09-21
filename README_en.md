@@ -1,5 +1,13 @@
 > **Language: English | [中文](README.md)**
 
+AND Home is a [Home Assistant](https://www.home-assistant.io/) custom integration for controlling Ai-Thinker WB2 series IoT devices.
+
+**Firmware Source Code**:
+- China Mainland: https://gitee.com/AmateurNoobDog/wb2_ha_firmware
+- China Hong Kong/Macau/Taiwan and Overseas: https://github.com/AmateurNoobDog/wb2_ha_firmware
+
+---
+
 # AND WB2 Device Communication Protocol Documentation
 
 ## Overview
@@ -512,6 +520,8 @@ echo '{"cmd":"calibrate"}' | nc 192.168.1.100 9100
 
 ## Related Links
 
+- [Firmware Repo (Gitee)](https://gitee.com/AmateurNoobDog/wb2_ha_firmware) - China Mainland
+- [Firmware Repo (GitHub)](https://github.com/AmateurNoobDog/wb2_ha_firmware) - China Hong Kong/Macau/Taiwan and Overseas
 - [Ai-Thinker Official](https://docs.ai-thinker.com/)
 - [Home Assistant](https://www.home-assistant.io/)
 - [HACS](https://hacs.xyz/)

@@ -1,5 +1,13 @@
 > **Language: [English](README_en.md) | 中文**
 
+AND Home 是一个 [Home Assistant](https://www.home-assistant.io/) 自定义集成，用于控制安信可（Ai-Thinker）WB2 系列 IoT 设备。
+
+**固件开源地址**:
+- 中国大陆: https://gitee.com/AmateurNoobDog/wb2_ha_firmware
+- 中国港澳台及海外: https://github.com/AmateurNoobDog/wb2_ha_firmware
+
+---
+
 # AND WB2 设备通信协议文档
 
 ## 概述
@@ -512,6 +520,8 @@ echo '{"cmd":"calibrate"}' | nc 192.168.1.100 9100
 
 ## 相关链接
 
+- [固件仓库 (Gitee)](https://gitee.com/AmateurNoobDog/wb2_ha_firmware) - 中国大陆
+- [固件仓库 (GitHub)](https://github.com/AmateurNoobDog/wb2_ha_firmware) - 中国港澳台及海外
 - [安信可官网](https://docs.ai-thinker.com/)
 - [Home Assistant](https://www.home-assistant.io/)
 - [HACS](https://hacs.xyz/)
