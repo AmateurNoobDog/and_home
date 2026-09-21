@@ -2,9 +2,13 @@
 
 AND Home 是一个 Home Assistant 自定义集成，当前硬件平台为安信可（Ai-Thinker）WB2。
 
-**固件开源地址**:
-- 中国大陆: https://gitee.com/AmateurNoobDog/wb2_ha_firmware
-- 中国港澳台及海外: https://github.com/AmateurNoobDog/wb2_ha_firmware
+**集成仓库**:
+- GitHub: https://github.com/AmateurNoobDog/and_home
+- Gitee: https://gitee.com/AmateurNoobDog/and_home
+
+**固件仓库**:
+- GitHub: https://github.com/AmateurNoobDog/wb2_ha_firmware
+- Gitee: https://gitee.com/AmateurNoobDog/wb2_ha_firmware
 
 ---
 

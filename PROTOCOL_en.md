@@ -2,9 +2,13 @@
 
 AND Home is a Home Assistant custom integration. Current hardware platform is Ai-Thinker WB2.
 
-**Firmware Source Code**:
-- China Mainland: https://gitee.com/AmateurNoobDog/wb2_ha_firmware
-- China Hong Kong/Macau/Taiwan and Overseas: https://github.com/AmateurNoobDog/wb2_ha_firmware
+**Integration Repository**:
+- GitHub: https://github.com/AmateurNoobDog/and_home
+- Gitee: https://gitee.com/AmateurNoobDog/and_home
+
+**Firmware Repository**:
+- GitHub: https://github.com/AmateurNoobDog/wb2_ha_firmware
+- Gitee: https://gitee.com/AmateurNoobDog/wb2_ha_firmware
 
 ---
 

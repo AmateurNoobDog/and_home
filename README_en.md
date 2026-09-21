@@ -2,9 +2,13 @@
 
 AND Home is a [Home Assistant](https://www.home-assistant.io/) custom integration for controlling Ai-Thinker WB2 series IoT devices.
 
-**Firmware Source Code**:
-- China Mainland: https://gitee.com/AmateurNoobDog/wb2_ha_firmware
-- China Hong Kong/Macau/Taiwan and Overseas: https://github.com/AmateurNoobDog/wb2_ha_firmware
+**Integration Repository**:
+- GitHub: https://github.com/AmateurNoobDog/and_home
+- Gitee: https://gitee.com/AmateurNoobDog/and_home
+
+**Firmware Repository**:
+- GitHub: https://github.com/AmateurNoobDog/wb2_ha_firmware
+- Gitee: https://gitee.com/AmateurNoobDog/wb2_ha_firmware
 
 ---
 
@@ -520,8 +524,10 @@ echo '{"cmd":"calibrate"}' | nc 192.168.1.100 9100
 
 ## Related Links
 
-- [Firmware Repo (Gitee)](https://gitee.com/AmateurNoobDog/wb2_ha_firmware) - China Mainland
-- [Firmware Repo (GitHub)](https://github.com/AmateurNoobDog/wb2_ha_firmware) - China Hong Kong/Macau/Taiwan and Overseas
+- [Integration Repo (GitHub)](https://github.com/AmateurNoobDog/and_home)
+- [Integration Repo (Gitee)](https://gitee.com/AmateurNoobDog/and_home)
+- [Firmware Repo (GitHub)](https://github.com/AmateurNoobDog/wb2_ha_firmware)
+- [Firmware Repo (Gitee)](https://gitee.com/AmateurNoobDog/wb2_ha_firmware)
 - [Ai-Thinker Official](https://docs.ai-thinker.com/)
 - [Home Assistant](https://www.home-assistant.io/)
 - [HACS](https://hacs.xyz/)
