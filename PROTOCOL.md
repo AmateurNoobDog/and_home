@@ -180,6 +180,8 @@ echo '{"cmd":"get_device"}' | nc 192.168.1.100 9100
 | `name` | string | 否 | 实体显示名称 |
 | `icon` | string | 否 | MDI 图标名（如 `mdi:power`） |
 | `action` | string | 否 | 按钮动作命令（仅 `button` 类型使用） |
+| `device_class` | string | 否 | HA 设备类（仅 `sensor` 类型使用） |
+| `unit` | string | 否 | 测量单位（仅 `sensor` 类型使用） |
 
 ---
 
@@ -531,12 +533,44 @@ echo '{"cmd":"get_device"}' | nc 192.168.1.100 9100
 |------|------|----------|----------|
 | `light` | RGB LED 灯 | set (r/g/b/brightness) | r, g, b, brightness |
 | `switch` | 继电器开关 | set (on) | on |
-| `binary_sensor` | 二进制传感器 | 仅上报 | motion, presence |
+| `binary_sensor` | 二进制传感器 | 仅上报 | value |
 | `sensor` | 数据传感器 | 仅上报 | value |
 | `event` | 事件实体 | 仅上报 | event_type, event_id |
 | `button` | 按钮 | send_cmd (action) | - |
 | `notify` | TTS 播报 | set (text) | - |
 | `number` | 数值控制 | set (value) | value |
+
+### sensor 类型支持的 device_class
+
+当实体类型为 `sensor` 时，可通过 `device_class` 字段指定设备类，集成会自动设置对应的单位和图标。
+
+| device_class | 说明 | 单位 | 示例 |
+|--------------|------|------|------|
+| `temperature` | 温度 | °C, °F | 室内温度传感器 |
+| `humidity` | 湿度 | % | 室内湿度传感器 |
+| `pressure` | 大气压 | hPa | 气压传感器 |
+| `battery` | 电池电量 | % | 设备电池 |
+| `co2` | 二氧化碳 | ppm | CO2 传感器 |
+| `pm25` | PM2.5 | μg/m³ | 空气质量传感器 |
+
+**温湿度传感器示例**:
+
+`get_device` 响应:
+```json
+{
+  "id": "temp_01",
+  "type": "sensor",
+  "name": "温度",
+  "icon": "mdi:thermometer",
+  "device_class": "temperature",
+  "unit": "°C"
+}
+```
+
+`get_state` 响应:
+```json
+{"id": "temp_01", "type": "sensor", "value": 25.6}
+```
 
 ---
 

@@ -19,6 +19,8 @@ class Wb2EntityDef:
     name: str = ""
     icon: str = ""
     action: str = ""
+    device_class: str = ""
+    unit: str = ""
 
 
 @dataclass
@@ -43,6 +45,8 @@ class Wb2DeviceInfo:
                     name=e.get("name", ""),
                     icon=e.get("icon", ""),
                     action=e.get("action", ""),
+                    device_class=e.get("device_class", ""),
+                    unit=e.get("unit", ""),
                 ))
         return cls(
             mac=data.get("mac", ""),

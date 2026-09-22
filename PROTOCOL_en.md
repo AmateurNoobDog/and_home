@@ -180,6 +180,8 @@ When the device receives the `get_device` command, it returns basic device info 
 | `name` | string | No | Entity display name |
 | `icon` | string | No | MDI icon name |
 | `action` | string | No | Button action command (only for `button` type) |
+| `device_class` | string | No | HA device class (only for `sensor` type) |
+| `unit` | string | No | Measurement unit (only for `sensor` type) |
 
 ---
 
@@ -531,12 +533,44 @@ The push server matches devices by the TCP connection's source IP address. The i
 |------|-------------|----------------|-------------|
 | `light` | RGB LED light | set (r/g/b/brightness) | r, g, b, brightness |
 | `switch` | Relay switch | set (on) | on |
-| `binary_sensor` | Binary sensor | Report only | motion, presence |
+| `binary_sensor` | Binary sensor | Report only | value |
 | `sensor` | Data sensor | Report only | value |
 | `event` | Event entity | Report only | event_type, event_id |
 | `button` | Button | send_cmd (action) | - |
 | `notify` | TTS broadcast | set (text) | - |
 | `number` | Numeric control | set (value) | value |
+
+### sensor Type Supported device_class
+
+When entity type is `sensor`, you can specify device class via `device_class` field. The integration will automatically set the corresponding unit and icon.
+
+| device_class | Description | Unit | Example |
+|--------------|-------------|------|---------|
+| `temperature` | Temperature | °C, °F | Indoor temperature sensor |
+| `humidity` | Humidity | % | Indoor humidity sensor |
+| `pressure` | Atmospheric pressure | hPa | Barometric sensor |
+| `battery` | Battery level | % | Device battery |
+| `co2` | CO2 | ppm | CO2 sensor |
+| `pm25` | PM2.5 | μg/m³ | Air quality sensor |
+
+**Temperature/Humidity Sensor Example**:
+
+`get_device` response:
+```json
+{
+  "id": "temp_01",
+  "type": "sensor",
+  "name": "Temperature",
+  "icon": "mdi:thermometer",
+  "device_class": "temperature",
+  "unit": "°C"
+}
+```
+
+`get_state` response:
+```json
+{"id": "temp_01", "type": "sensor", "value": 25.6}
+```
 
 ---
 
