@@ -1,6 +1,6 @@
 > **Language: English | [中文](PROTOCOL.md)**
 
-AND Home is a Home Assistant custom integration. Current hardware platform is Ai-Thinker WB2.
+AND Home is a Home Assistant custom integration for controlling IoT devices.
 
 **Integration Repository**:
 - GitHub: https://github.com/AmateurNoobDog/and_home
@@ -16,7 +16,7 @@ AND Home is a Home Assistant custom integration. Current hardware platform is Ai
 
 ## Overview
 
-AND Home WB2 series devices communicate using **TCP Socket + JSON line protocol**.
+AND Home devices communicate using **TCP Socket + JSON line protocol**.
 
 - **Protocol Version**: v2 (Entity-driven architecture)
 - **Transport Layer**: TCP
@@ -96,7 +96,7 @@ When Zeroconf discovery fails, the integration can discover devices via TCP scan
 **Valid Response Example** (device exists):
 
 ```json
-{"mac":"AA:BB:CC:11:22:33","name":"客厅灯","model":"WB2-Light","entities":[]}
+{"mac":"AA:BB:CC:11:22:33","name":"客厅灯","model":"AND-Light","entities":[]}
 ```
 
 **No Response or Invalid Response** (device does not exist):
@@ -118,7 +118,7 @@ echo '{"cmd":"get_device"}' | nc 192.168.1.100 9100
 **Valid Response**:
 
 ```json
-{"mac":"AA:BB:CC:11:22:33","name":"客厅灯","model":"WB2-Light","sw_version":"1.0.0","entities":[{"id":"light_01","type":"light","name":"主灯","icon":"mdi:white-balance-sunny"}]}
+{"mac":"AA:BB:CC:11:22:33","name":"客厅灯","model":"AND-Light","sw_version":"1.0.0","entities":[{"id":"light_01","type":"light","name":"主灯","icon":"mdi:white-balance-sunny"}]}
 ```
 
 **Connection Failed**: No response or timeout, integration shows "Cannot connect to device".
@@ -141,8 +141,8 @@ When the device receives the `get_device` command, it returns basic device info 
 {
   "mac": "AA:BB:CC:11:22:33",
   "name": "客厅灯",
-  "model": "WB2-Light",
-  "manufacturer": "Ai-Thinker",
+  "model": "AND-Light",
+  "manufacturer": "AND",
   "sw_version": "1.0.0",
   "entities": [
     {"id": "light_01", "type": "light", "name": "主灯", "icon": "mdi:white-balance-sunny"},
@@ -598,7 +598,7 @@ When entity type is `sensor`, you can specify device class via `device_class` fi
 2. HA discovers device, sends get_device to verify
 
    >>> {"cmd":"get_device"}
-   <<< {"mac":"AA:BB:CC:11:22:33","name":"客厅灯","model":"WB2-Light","manufacturer":"Ai-Thinker","sw_version":"1.0.0","entities":[{"id":"light_01","type":"light","name":"主灯","icon":"mdi:white-balance-sunny"},{"id":"switch_01","type":"switch","name":"开关1","icon":"mdi:power"}]}
+   <<< {"mac":"AA:BB:CC:11:22:33","name":"客厅灯","model":"AND-Light","manufacturer":"AND","sw_version":"1.0.0","entities":[{"id":"light_01","type":"light","name":"主灯","icon":"mdi:white-balance-sunny"},{"id":"switch_01","type":"switch","name":"开关1","icon":"mdi:power"}]}
 
 3. User confirms addition, HA creates config entry
 4. HA first poll to get states

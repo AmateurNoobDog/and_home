@@ -1,4 +1,4 @@
-"""DataUpdateCoordinator for the WB2 integration."""
+"""DataUpdateCoordinator for the AND Home integration."""
 
 from __future__ import annotations
 
@@ -16,7 +16,7 @@ _LOGGER = logging.getLogger(__name__)
 
 
 class Wb2Coordinator(DataUpdateCoordinator[Wb2State]):
-    """Coordinator polling the WB2 device and owning the TCP client."""
+    """Coordinator polling the AND Home device and owning the TCP client."""
 
     def __init__(self, hass: HomeAssistant, client: Wb2Client,
                  device_info: Wb2DeviceInfo) -> None:

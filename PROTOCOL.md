@@ -1,6 +1,6 @@
 > **Language: [English](PROTOCOL_en.md) | 中文**
 
-AND Home 是一个 Home Assistant 自定义集成，当前硬件平台为安信可（Ai-Thinker）WB2。
+AND Home 是一个 Home Assistant 自定义集成，用于控制 IoT 设备。
 
 **集成仓库**:
 - GitHub: https://github.com/AmateurNoobDog/and_home
@@ -16,7 +16,7 @@ AND Home 是一个 Home Assistant 自定义集成，当前硬件平台为安信�
 
 ## 概述
 
-AND Home WB2 系列设备使用 **TCP Socket + JSON 行协议** 进行通信。
+AND Home 设备使用 **TCP Socket + JSON 行协议** 进行通信。
 
 - **协议版本**: v2（实体驱动架构）
 - **传输层**: TCP
@@ -96,7 +96,7 @@ mDNS 服务类型: _and._tcp.local.
 **有效响应示例**（设备存在）:
 
 ```json
-{"mac":"AA:BB:CC:11:22:33","name":"客厅灯","model":"WB2-Light","entities":[]}
+{"mac":"AA:BB:CC:11:22:33","name":"客厅灯","model":"AND-Light","entities":[]}
 ```
 
 **无响应或无效响应**（设备不存在）:
@@ -118,7 +118,7 @@ echo '{"cmd":"get_device"}' | nc 192.168.1.100 9100
 **有效响应**:
 
 ```json
-{"mac":"AA:BB:CC:11:22:33","name":"客厅灯","model":"WB2-Light","sw_version":"1.0.0","entities":[{"id":"light_01","type":"light","name":"主灯","icon":"mdi:white-balance-sunny"}]}
+{"mac":"AA:BB:CC:11:22:33","name":"客厅灯","model":"AND-Light","sw_version":"1.0.0","entities":[{"id":"light_01","type":"light","name":"主灯","icon":"mdi:white-balance-sunny"}]}
 ```
 
 **连接失败**: 无响应或超时，集成提示"无法连接到设备"。
@@ -141,8 +141,8 @@ echo '{"cmd":"get_device"}' | nc 192.168.1.100 9100
 {
   "mac": "AA:BB:CC:11:22:33",
   "name": "客厅灯",
-  "model": "WB2-Light",
-  "manufacturer": "Ai-Thinker",
+  "model": "AND-Light",
+  "manufacturer": "AND",
   "sw_version": "1.0.0",
   "entities": [
     {"id": "light_01", "type": "light", "name": "主灯", "icon": "mdi:white-balance-sunny"},
@@ -166,8 +166,8 @@ echo '{"cmd":"get_device"}' | nc 192.168.1.100 9100
 |------|------|------|------|
 | `mac` | string | 是 | 设备 MAC 地址（格式 `AA:BB:CC:DD:EE:FF`） |
 | `name` | string | 是 | 设备显示名称（如"客厅灯"） |
-| `model` | string | 是 | 设备型号（如"WB2-Light"） |
-| `manufacturer` | string | 否 | 制造商名称（如"Ai-Thinker"），不返回则不显示 |
+| `model` | string | 是 | 设备型号（如"AND-Light"） |
+| `manufacturer` | string | 否 | 制造商名称（如"AND"），不返回则不显示 |
 | `sw_version` | string | 否 | 固件版本号 |
 | `entities` | list | 是 | 实体定义列表 |
 
@@ -598,7 +598,7 @@ echo '{"cmd":"get_device"}' | nc 192.168.1.100 9100
 2. HA 发现设备，发送 get_device 验证
 
    >>> {"cmd":"get_device"}
-   <<< {"mac":"AA:BB:CC:11:22:33","name":"客厅灯","model":"WB2-Light","manufacturer":"Ai-Thinker","sw_version":"1.0.0","entities":[{"id":"light_01","type":"light","name":"主灯","icon":"mdi:white-balance-sunny"},{"id":"switch_01","type":"switch","name":"开关1","icon":"mdi:power"}]}
+   <<< {"mac":"AA:BB:CC:11:22:33","name":"客厅灯","model":"AND-Light","manufacturer":"AND","sw_version":"1.0.0","entities":[{"id":"light_01","type":"light","name":"主灯","icon":"mdi:white-balance-sunny"},{"id":"switch_01","type":"switch","name":"开关1","icon":"mdi:power"}]}
 
 3. 用户确认添加，HA 创建配置项
 4. HA 首次轮询获取状态

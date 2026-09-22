@@ -1,4 +1,4 @@
-"""The WB2 integration."""
+"""The AND Home integration."""
 
 from __future__ import annotations
 
@@ -36,7 +36,7 @@ def _platforms_for_entity_types(entity_types: set[str]) -> list[str]:
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    """Set up WB2 from a config entry."""
+    """Set up AND Home from a config entry."""
     host: str = entry.data[CONF_HOST]
     port: int = entry.data[CONF_PORT]
     host_ip: str | None = entry.data.get("host_ip")

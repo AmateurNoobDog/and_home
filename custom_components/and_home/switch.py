@@ -1,4 +1,4 @@
-"""Switch entities for AND WB2 devices (data-driven by entity id)."""
+"""Switch entities for AND Home devices (data-driven by entity id)."""
 
 from __future__ import annotations
 

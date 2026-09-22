@@ -1,4 +1,4 @@
-"""Config flow for the WB2 integration."""
+"""Config flow for the AND Home integration."""
 
 from __future__ import annotations
 
@@ -76,7 +76,7 @@ async def _candidate_hosts(hass: HomeAssistant) -> list[str]:
 
 
 class Wb2ConfigFlow(ConfigFlow, domain=DOMAIN):
-    """Handle a config flow for WB2."""
+    """Handle a config flow for AND Home."""
 
     VERSION = 1
 
@@ -94,7 +94,7 @@ class Wb2ConfigFlow(ConfigFlow, domain=DOMAIN):
     async def async_step_scan(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
-        """Offer to scan the LAN for WB2 devices."""
+        """Offer to scan the LAN for AND Home devices."""
         hosts = await _candidate_hosts(self.hass)
         if not hosts:
             return self.async_abort(reason="no_network")

@@ -1,4 +1,4 @@
-"""Binary sensor entities for AND WB2 devices (data-driven by entity id)."""
+"""Binary sensor entities for AND Home devices (data-driven by entity id)."""
 
 from __future__ import annotations
 

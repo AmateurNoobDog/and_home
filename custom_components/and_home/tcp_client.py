@@ -1,4 +1,4 @@
-"""Async TCP client for the WB2 JSON protocol (v2 — entity-based)."""
+"""Async TCP client for the AND Home JSON protocol (v2 — entity-based)."""
 
 from __future__ import annotations
 
@@ -104,7 +104,7 @@ class Wb2State:
 
 
 class Wb2Client:
-    """Async TCP client for the WB2 JSON line protocol (v2)."""
+    """Async TCP client for the AND Home JSON line protocol (v2)."""
 
     def __init__(self, host: str, port: int, timeout: float = 3.0,
                  host_ip: str | None = None) -> None:

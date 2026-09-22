@@ -1,6 +1,6 @@
 > **Language: [English](README_en.md) | 中文**
 
-AND Home 是一个 [Home Assistant](https://www.home-assistant.io/) 自定义集成，用于控制安信可（Ai-Thinker）WB2 系列 IoT 设备。
+AND Home 是一个 [Home Assistant](https://www.home-assistant.io/) 自定义集成，用于控制 IoT 设备。
 
 **集成仓库**:
 - GitHub: https://github.com/AmateurNoobDog/and_home
@@ -12,11 +12,11 @@ AND Home 是一个 [Home Assistant](https://www.home-assistant.io/) 自定义集
 
 ---
 
-# AND WB2 设备通信协议文档
+# 设备通信协议文档
 
 ## 概述
 
-AND WB2 系列设备使用 **TCP Socket + JSON 行协议** 进行通信。设备作为 TCP 服务器，Home Assistant 集成作为客户端连接设备并发送命令。
+AND Home 设备使用 **TCP Socket + JSON 行协议** 进行通信。设备作为 TCP 服务器，Home Assistant 集成作为客户端连接设备并发送命令。
 
 **协议版本**: v2（实体驱动架构）
 

@@ -1,4 +1,4 @@
-"""Light entity for AND WB2 devices (data-driven by entity id)."""
+"""Light entity for AND Home devices (data-driven by entity id)."""
 
 from __future__ import annotations
 

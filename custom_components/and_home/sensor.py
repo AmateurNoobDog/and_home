@@ -1,4 +1,4 @@
-"""Sensor entities for AND WB2 devices (data-driven by entity id)."""
+"""Sensor entities for AND Home devices (data-driven by entity id)."""
 
 from __future__ import annotations
 

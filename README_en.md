@@ -1,6 +1,6 @@
 > **Language: English | [中文](README.md)**
 
-AND Home is a [Home Assistant](https://www.home-assistant.io/) custom integration for controlling Ai-Thinker WB2 series IoT devices.
+AND Home is a [Home Assistant](https://www.home-assistant.io/) custom integration for controlling IoT devices.
 
 **Integration Repository**:
 - GitHub: https://github.com/AmateurNoobDog/and_home
@@ -12,11 +12,11 @@ AND Home is a [Home Assistant](https://www.home-assistant.io/) custom integratio
 
 ---
 
-# AND WB2 Device Communication Protocol Documentation
+# Device Communication Protocol Documentation
 
 ## Overview
 
-AND WB2 series devices communicate using **TCP Socket + JSON line protocol**. The device acts as a TCP server, and the Home Assistant integration connects as a TCP client to send commands.
+AND Home devices communicate using **TCP Socket + JSON line protocol**. The device acts as a TCP server, and the Home Assistant integration connects as a TCP client to send commands.
 
 **Protocol Version**: v2 (Entity-driven architecture)
 
