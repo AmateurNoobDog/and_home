@@ -32,6 +32,9 @@ class Wb2DeviceInfo:
     manufacturer: str = ""
     sw_version: str = ""
     entities: list[Wb2EntityDef] = field(default_factory=list)
+    # Seconds without a push before HA marks the device unavailable.
+    # >0 enables push-only mode (no polling); 0/absent keeps poll mode.
+    offline_timeout: int = 0
 
     @classmethod
     def from_dict(cls, data: dict) -> "Wb2DeviceInfo":
@@ -48,6 +51,10 @@ class Wb2DeviceInfo:
                     device_class=e.get("device_class", ""),
                     unit=e.get("unit", ""),
                 ))
+        try:
+            offline_timeout = int(data.get("offline_timeout", 0) or 0)
+        except (TypeError, ValueError):
+            offline_timeout = 0
         return cls(
             mac=data.get("mac", ""),
             name=data.get("name", ""),
@@ -55,6 +62,7 @@ class Wb2DeviceInfo:
             manufacturer=data.get("manufacturer", ""),
             sw_version=data.get("sw_version", ""),
             entities=entities,
+            offline_timeout=max(0, offline_timeout),
         )
 
 

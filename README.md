@@ -108,9 +108,13 @@ AND Home 设备使用 **TCP Socket + JSON 行协议** 进行通信。设备作�
     {"id": "radar_01", "type": "binary_sensor", "name": "存在检测", "icon": "mdi:motion-sensor"},
     {"id": "event_01", "type": "event", "name": "遥控器", "icon": "mdi:remote"},
     {"id": "key_01", "type": "sensor", "name": "键值", "icon": "mdi:remote"}
-  ]
+  ],
+  "offline_timeout": 300
 }
 ```
+
+> `offline_timeout`（秒，可选）：`>0` 时集成进入**推送-only 模式**（初始化后不轮询），
+> 超过该时长未收到推送则实体变为不可用；`0`/缺省为轮询模式。设备仅在推送已配置时上报 `>0`。
 
 ### get_state 响应
 
@@ -138,6 +142,7 @@ AND Home 设备使用 **TCP Socket + JSON 行协议** 进行通信。设备作�
 | `model` | string | 设备型号 |
 | `sw_version` | string | 固件版本 |
 | `entities` | list | 实体定义列表 |
+| `offline_timeout` | int | 掉线超时（秒，可选）：`>0` 启用推送-only 模式 |
 
 #### Wb2EntityDef（实体定义）
 
@@ -250,7 +255,8 @@ Home Assistant 集成支持两种设备发现方式：
 # 连接参数
 DEFAULT_PORT = 9100
 SCAN_TIMEOUT = 0.3  # 设备扫描超时（秒）
-POLL_INTERVAL = 10  # 状态轮询间隔（秒）
+POLL_INTERVAL = 10  # 状态轮询间隔（秒），仅轮询模式
+PUSH_CHECK_INTERVAL = 30  # 推送-only 模式的陈旧检查周期（秒，无网络 I/O）
 
 # 设备类型
 DEVICE_TYPE_LIGHT = "light"

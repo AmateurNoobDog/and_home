@@ -108,9 +108,14 @@ All requests are single-line JSON objects ending with `\n`.
     {"id": "radar_01", "type": "binary_sensor", "name": "存在检测", "icon": "mdi:motion-sensor"},
     {"id": "event_01", "type": "event", "name": "遥控器", "icon": "mdi:remote"},
     {"id": "key_01", "type": "sensor", "name": "键值", "icon": "mdi:remote"}
-  ]
+  ],
+  "offline_timeout": 300
 }
 ```
+
+> `offline_timeout` (seconds, optional): when `>0` the integration enters **push-only mode**
+> (no polling after initialization) and marks entities unavailable if no push arrives within
+> this timeout; `0`/absent keeps poll mode. Devices report `>0` only when push is configured.
 
 ### get_state Response
 
@@ -138,6 +143,7 @@ All requests are single-line JSON objects ending with `\n`.
 | `model` | string | Device model |
 | `sw_version` | string | Firmware version |
 | `entities` | list | Entity definition list |
+| `offline_timeout` | int | Offline timeout (seconds, optional): `>0` enables push-only mode |
 
 #### Wb2EntityDef (Entity Definition)
 
@@ -250,7 +256,8 @@ If auto-discovery fails, users can manually enter the device IP address.
 # Connection parameters
 DEFAULT_PORT = 9100
 SCAN_TIMEOUT = 0.3  # Device scan timeout (seconds)
-POLL_INTERVAL = 10  # State polling interval (seconds)
+POLL_INTERVAL = 10  # State polling interval (seconds), poll mode only
+PUSH_CHECK_INTERVAL = 30  # Push-only staleness check period (seconds, no network I/O)
 
 # Device types
 DEVICE_TYPE_LIGHT = "light"

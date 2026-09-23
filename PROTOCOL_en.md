@@ -154,7 +154,8 @@ When the device receives the `get_device` command, it returns basic device info 
     {"id": "btn_pair", "type": "button", "name": "433配对", "icon": "mdi:remote", "action": "pair"},
     {"id": "tts_01", "type": "notify", "name": "TTS播报", "icon": "mdi:volume-high"},
     {"id": "vol_01", "type": "number", "name": "音量", "icon": "mdi:volume-high"}
-  ]
+  ],
+  "offline_timeout": 300
 }
 ```
 
@@ -170,6 +171,7 @@ When the device receives the `get_device` command, it returns basic device info 
 | `manufacturer` | string | No | Manufacturer name, not displayed if not returned |
 | `sw_version` | string | No | Firmware version |
 | `entities` | list | Yes | Entity definition list |
+| `offline_timeout` | int | No | Offline timeout (seconds). When `>0` the integration enters **push-only mode** (no polling after initialization) and marks entities unavailable if no push arrives within this timeout; `0`/absent keeps poll mode (`get_state` every 10 seconds). Devices report `>0` only when a push target is configured |
 
 #### Entity Definition Fields
 
@@ -187,7 +189,7 @@ When the device receives the `get_device` command, it returns basic device info 
 
 ## State Reporting (get_state)
 
-When the device receives the `get_state` command, it returns the current state of all entities. The integration polls every 10 seconds.
+When the device receives the `get_state` command, it returns the current state of all entities. In poll mode the integration polls every 10 seconds; in push-only mode (`offline_timeout > 0`) it requests state once at initialization and then only receives pushes.
 
 ### Request Format
 
@@ -464,6 +466,7 @@ The push server matches devices by the TCP connection's source IP address. The i
 | `manufacturer` | string | Manufacturer (optional) |
 | `sw_version` | string | Firmware version (optional) |
 | `entities` | list | Entity definition list |
+| `offline_timeout` | int | Offline timeout (seconds, optional): `>0` enables push-only mode |
 
 #### Entity Definition Fields
 

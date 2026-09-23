@@ -154,7 +154,8 @@ echo '{"cmd":"get_device"}' | nc 192.168.1.100 9100
     {"id": "btn_pair", "type": "button", "name": "433配对", "icon": "mdi:remote", "action": "pair"},
     {"id": "tts_01", "type": "notify", "name": "TTS播报", "icon": "mdi:volume-high"},
     {"id": "vol_01", "type": "number", "name": "音量", "icon": "mdi:volume-high"}
-  ]
+  ],
+  "offline_timeout": 300
 }
 ```
 
@@ -170,6 +171,7 @@ echo '{"cmd":"get_device"}' | nc 192.168.1.100 9100
 | `manufacturer` | string | 否 | 制造商名称（如"AND"），不返回则不显示 |
 | `sw_version` | string | 否 | 固件版本号 |
 | `entities` | list | 是 | 实体定义列表 |
+| `offline_timeout` | int | 否 | 掉线超时（秒）。`>0` 时集成进入**推送-only 模式**（初始化后不再轮询），超过该时长未收到推送则实体不可用；`0`/缺省为轮询模式（每 10 秒 `get_state`）。设备仅在推送目标已配置时上报 `>0` |
 
 #### 实体定义字段
 
@@ -187,7 +189,8 @@ echo '{"cmd":"get_device"}' | nc 192.168.1.100 9100
 
 ## 状态上报 (get_state)
 
-设备收到 `get_state` 命令后，返回所有实体的当前状态。集成每 10 秒轮询一次。
+设备收到 `get_state` 命令后，返回所有实体的当前状态。轮询模式下集成每 10 秒轮询一次；
+推送-only 模式（`offline_timeout > 0`）下集成仅在初始化时请求一次，之后只接收推送。
 
 ### 请求格式
 
@@ -464,6 +467,7 @@ echo '{"cmd":"get_device"}' | nc 192.168.1.100 9100
 | `manufacturer` | string | 制造商（可选） |
 | `sw_version` | string | 固件版本（可选） |
 | `entities` | list | 实体定义列表 |
+| `offline_timeout` | int | 掉线超时（秒，可选）：`>0` 启用推送-only 模式 |
 
 #### 实体定义字段
 

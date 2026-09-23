@@ -17,6 +17,10 @@ DEFAULT_TYPE = "light"
 SCAN_TIMEOUT = 0.3
 POLL_INTERVAL = 10
 
+# Push-only mode: how often the coordinator checks data staleness (no I/O).
+# When data is older than device-reported offline_timeout, entities go unavailable.
+PUSH_CHECK_INTERVAL = 30
+
 
 def normalize_mac(mac: str | None) -> str:
     """Normalize MAC address to uppercase without separators."""
